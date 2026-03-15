@@ -547,7 +547,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:28px
   <h1>Your <svg class="hero-x-logo" viewBox="0 0 14 13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="X"><path d="M10.9408 0H13.0619L8.42885 5.33345L13.8992 12.5657H9.60107L6.25186 8.18168L2.40027 12.5657H0.279101L5.2471 6.86926L0 0H4.40979L7.45199 4.02103L10.9408 0ZM10.1872 11.2812H11.3594L3.76786 1.20072H2.484L10.1872 11.2812Z" fill="currentColor"/></svg> account,<br/><em>on autopilot.</em></h1>
   <p class="hero-sub">An AI agent that replies, likes, follows, and DMs — <strong>in your exact voice</strong> — while you focus on building.</p>
   <div class="cta-row">
-    <a href="#" data-gr-trigger>
+    <a href="#" data-gr-trigger id="hero-cta">
       <button class="btn-main">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         GET INSTANT ACCESS — $99
@@ -1509,10 +1509,10 @@ document.querySelectorAll('.feat-card,.feat-hero,.prob-card,.step-card,.testi').
     }
   }
 
-  inner.addEventListener('click', e => {
-    const cell = e.target.closest('.hcell');
-    if (!cell) return;
-    const cr = cell._r, cc = cell._c;
+  function rippleFromXY(x, y) {
+    const rect = wrap.getBoundingClientRect();
+    const cr = Math.round((y - rect.top)  / CELL);
+    const cc = Math.round((x - rect.left) / CELL);
     cells.forEach(d => {
       const dist = Math.hypot(d._r - cr, d._c - cc);
       d.style.setProperty('--cdel', Math.max(0, dist * 55) + 'ms');
@@ -1521,7 +1521,22 @@ document.querySelectorAll('.feat-card,.feat-hero,.prob-card,.step-card,.testi').
       void d.offsetWidth;
       d.classList.add('rip');
     });
+  }
+
+  inner.addEventListener('click', e => {
+    const cell = e.target.closest('.hcell');
+    if (!cell) return;
+    rippleFromXY(e.clientX, e.clientY);
   });
+
+  // Ripple from CTA button center on hover
+  const ctaBtn = document.getElementById('hero-cta');
+  if (ctaBtn) {
+    ctaBtn.addEventListener('mouseenter', () => {
+      const r = ctaBtn.getBoundingClientRect();
+      rippleFromXY(r.left + r.width / 2, r.top + r.height / 2);
+    });
+  }
 
   let t;
   window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(build, 120); });
