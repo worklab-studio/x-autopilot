@@ -20,4 +20,4 @@ Allow: /
 User-agent: Bingbot
 Allow: /
 
-Sitemap: https://x-autopilot.app/sitemap.xml
+Sitemap: https://xautopilot.app/sitemap.xml
