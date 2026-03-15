@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>X-Autopilot — Grow on X While You Sleep</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0a0a0a;
+  --surface:#111111;
+  --border:#1e1e1e;
+  --border2:#2a2a2a;
+  --accent:#00ff88;
+  --accent-dim:rgba(0,255,136,0.07);
+  --text:#e8e8e8;
+  --text-mid:#888888;
+  --text-dim:#444444;
+  --red:#ff4444;
+  --yellow:#ffcc00;
+  --blue:#4488ff;
+  --purple:#cc88ff;
+  --orange:#ff8844;
+  --pink:#ff4488;
+  --mono:'JetBrains Mono','Courier New',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:14px;line-height:1.7;overflow-x:hidden;}
+a{color:inherit;text-decoration:none;}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(10,10,10,0.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 48px;}
+.nav-logo{font-size:13px;font-weight:800;letter-spacing:4px;color:var(--accent);}
+.nav-links{display:flex;align-items:center;gap:32px;}
+.nav-links a{font-size:10px;letter-spacing:2px;color:var(--text-dim);transition:color .15s;}
+.nav-links a:hover{color:var(--text);}
+.nav-cta{background:var(--accent);color:var(--bg);font-size:10px;font-weight:800;letter-spacing:2px;padding:9px 22px;border:none;cursor:pointer;font-family:var(--mono);transition:opacity .15s;}
+.nav-cta:hover{opacity:.85;}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 48px 88px;text-align:center;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:1000px;height:700px;background:radial-gradient(ellipse,rgba(0,255,136,.05) 0%,transparent 65%);pointer-events:none;}
+/* ── HERO GRID BG ── */
+#hero-grid-bg{position:absolute;inset:0;overflow:hidden;z-index:0;pointer-events:none;
+  -webkit-mask-image:radial-gradient(ellipse 100% 75% at 50% 0%,black 10%,transparent 100%);
+  mask-image:radial-gradient(ellipse 100% 75% at 50% 0%,black 10%,transparent 100%);}
+#hero-grid-inner{display:grid;pointer-events:auto;}
+.hero-x-logo{height:.72em;width:auto;display:inline-block;vertical-align:.04em;color:inherit;}
+.hcell{border:.5px solid rgba(0,255,136,0.07);opacity:.45;transition:opacity 150ms,background-color 150ms;will-change:transform;cursor:default;}
+.hcell:hover{opacity:.9;background-color:rgba(0,255,136,0.13);}
+@keyframes hcell-ripple{
+  0%  {background-color:rgba(0,255,136,0);   opacity:.4;}
+  38% {background-color:rgba(0,255,136,0.32);opacity:.95;}
+  100%{background-color:rgba(0,255,136,0);   opacity:.4;}
+}
+.hcell.rip{animation:hcell-ripple var(--cdur,300ms) ease-out var(--cdel,0ms) both;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border2);padding:5px 14px;font-size:9px;letter-spacing:2.5px;color:var(--text-dim);margin-bottom:28px;position:relative;z-index:1;}
+.hero-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:pulse 2s ease infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,136,.4)}50%{opacity:.5;box-shadow:0 0 0 4px rgba(0,255,136,0)}}
+.hero h1{font-size:clamp(38px,6.5vw,76px);font-weight:800;line-height:1.03;letter-spacing:-2.5px;margin-bottom:20px;position:relative;z-index:1;}
+.hero h1 em{color:var(--accent);font-style:normal;}
+.hero-sub{font-size:13px;color:var(--text-mid);max-width:420px;margin:0 auto 44px;line-height:1.9;position:relative;z-index:1;letter-spacing:.2px;}
+.hero-sub strong{color:var(--text);}
+.cta-row{display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;position:relative;z-index:1;margin-bottom:52px;}
+.btn-main{background:var(--accent);color:var(--bg);font-size:11px;font-weight:800;letter-spacing:2px;padding:15px 34px;border:none;cursor:pointer;font-family:var(--mono);transition:all .15s;display:inline-flex;align-items:center;gap:10px;}
+.btn-main:hover{opacity:.88;transform:translateY(-1px);}
+.btn-ghost{background:transparent;color:var(--text-mid);font-size:10px;font-weight:600;letter-spacing:1.5px;padding:14px 26px;border:1px solid var(--border2);cursor:pointer;font-family:var(--mono);transition:all .15s;display:inline-flex;align-items:center;gap:8px;}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text);background:rgba(255,255,255,.02);}
+/* Stats row */
+.hero-stats{display:flex;gap:0;border:1px solid var(--border);position:relative;z-index:1;}
+.hstat{padding:14px 28px;text-align:center;border-right:1px solid var(--border);}
+.hstat:last-child{border-right:none;}
+.hstat-n{font-size:22px;font-weight:800;color:var(--accent);}
+.hstat-n.highlight{color:var(--yellow);}
+.hstat-l{font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-top:2px;}
+
+/* ── TICKER ── */
+.ticker-wrap{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:11px 0;overflow:hidden;white-space:nowrap;}
+.ticker-inner{display:inline-flex;animation:scroll 35s linear infinite;}
+@keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick-item{display:inline-flex;align-items:center;gap:10px;padding:0 28px;font-size:9px;letter-spacing:2px;color:var(--text-dim);border-right:1px solid var(--border);}
+.tick-icon{color:var(--accent);display:flex;align-items:center;}
+
+/* ── SHARED ── */
+.wrap{max-width:1080px;margin:0 auto;padding:88px 48px;}
+.wrap-center{text-align:center;}
+.divider{border:none;border-top:1px solid var(--border);}
+.sec-tag{font-size:9px;letter-spacing:3px;color:var(--accent);margin-bottom:10px;}
+.sec-h{font-size:clamp(24px,4vw,40px);font-weight:800;letter-spacing:-1px;line-height:1.08;margin-bottom:14px;}
+.sec-p{font-size:12px;color:var(--text-mid);max-width:500px;margin:0 auto 48px;line-height:2;}
+.wrap-left{text-align:left;}
+.wrap-left .sec-tag,.wrap-left .sec-h{text-align:center;}
+.wrap-left .sec-p{text-align:center;margin-left:auto;margin-right:auto;max-width:500px;}
+
+/* ── SVG ICON CONTAINERS ── */
+.icon-box{width:44px;height:44px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--accent);}
+.icon-box-sm{width:36px;height:36px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+
+/* ── PROBLEM SECTION ── */
+.prob-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--border);margin-top:40px;}
+.prob-card{background:var(--surface);padding:32px;position:relative;overflow:hidden;border-right:1px solid var(--border);}
+.prob-card:last-child{border-right:none;}
+.prob-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--red);opacity:.5;}
+.prob-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;}
+.prob-num{font-size:9px;color:var(--text-dim);letter-spacing:3px;margin-top:2px;}
+.prob-icon{width:36px;height:36px;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--accent);}
+.prob-h{font-size:14px;font-weight:700;margin-bottom:10px;letter-spacing:.1px;line-height:1.3;}
+.prob-p{font-size:11px;color:var(--text-mid);line-height:1.9;}
+
+.solution-bridge{display:flex;align-items:center;justify-content:center;gap:24px;padding:32px 48px;border-top:1px solid var(--border);}
+.bridge-line{flex:1;height:1px;background:linear-gradient(to right,transparent,var(--border2));}
+.bridge-line-r{flex:1;height:1px;background:linear-gradient(to left,transparent,var(--border2));}
+.bridge-arrow{display:flex;align-items:center;justify-content:center;width:36px;height:36px;border:1px solid var(--border2);color:var(--accent);}
+
+/* ── FEATURES SECTION ── */
+.feat-hero{border:1px solid var(--border);margin-bottom:1px;display:grid;grid-template-columns:240px 1fr;min-height:220px;}
+.feat-hero-left{border-right:1px solid var(--border);padding:36px;display:flex;flex-direction:column;justify-content:space-between;background:var(--surface);position:relative;overflow:hidden;}
+.feat-hero-left::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 0% 100%,rgba(0,255,136,.06) 0%,transparent 60%);pointer-events:none;}
+.feat-hero-left .icon-box{width:52px;height:52px;border-color:rgba(0,255,136,.25);background:rgba(0,255,136,.05);color:var(--accent);}
+.feat-hero-num{font-size:52px;font-weight:800;color:var(--accent);opacity:.08;line-height:1;align-self:flex-end;}
+.feat-hero-right{padding:36px;display:flex;flex-direction:column;justify-content:center;gap:14px;}
+.feat-hero-right .feat-tag{font-size:9px;letter-spacing:3px;color:var(--accent);}
+.feat-hero-right .feat-h{font-size:20px;font-weight:800;letter-spacing:-.5px;line-height:1.2;}
+.feat-hero-right .feat-p{font-size:12px;color:var(--text-mid);line-height:1.9;max-width:480px;}
+.feat-bullets{display:flex;flex-direction:column;gap:6px;margin-top:4px;}
+.feat-bullet{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--text-dim);letter-spacing:.5px;}
+.feat-bullet::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.5;flex-shrink:0;}
+
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);}
+.feat-card{background:var(--surface);padding:28px 28px 32px;transition:background .15s;position:relative;display:flex;flex-direction:column;gap:0;}
+.feat-card:hover{background:#141414;}
+.feat-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;}
+.feat-card-num{font-size:10px;color:var(--text-dim);letter-spacing:2px;}
+.feat-tag{font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:8px;}
+.feat-h{font-size:13px;font-weight:700;margin-bottom:10px;letter-spacing:.2px;line-height:1.3;}
+.feat-p{font-size:11px;color:var(--text-mid);line-height:1.9;flex:1;}
+.feat-divider{width:24px;height:1px;background:var(--border2);margin:16px 0 12px;}
+
+/* Color accents per card */
+.feat-card:nth-child(1) .icon-box{color:var(--blue);border-color:rgba(68,136,255,.2);background:rgba(68,136,255,.04);}
+.feat-card:nth-child(2) .icon-box{color:var(--yellow);border-color:rgba(255,204,0,.2);background:rgba(255,204,0,.04);}
+.feat-card:nth-child(3) .icon-box{color:var(--purple);border-color:rgba(204,136,255,.2);background:rgba(204,136,255,.04);}
+.feat-card:nth-child(4) .icon-box{color:var(--pink);border-color:rgba(255,68,136,.2);background:rgba(255,68,136,.04);}
+.feat-card:nth-child(5) .icon-box{color:var(--orange);border-color:rgba(255,136,68,.2);background:rgba(255,136,68,.04);}
+
+.feat-card:nth-child(1) .feat-tag{color:var(--blue);}
+.feat-card:nth-child(2) .feat-tag{color:var(--yellow);}
+.feat-card:nth-child(3) .feat-tag{color:var(--purple);}
+.feat-card:nth-child(4) .feat-tag{color:var(--pink);}
+.feat-card:nth-child(5) .feat-tag{color:var(--orange);}
+
+/* ── ACTIONS GRID ── */
+.act-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:1px;padding:3px 10px;border:1px solid;font-weight:600;}
+/* ── ACTIONS COMPACT ── */
+.actions-compact{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);margin-top:36px;}
+.action-cell{background:var(--surface);padding:18px 20px;display:flex;flex-direction:column;gap:8px;transition:background .15s;}
+.action-cell:hover{background:#141414;}
+.action-cell-top{display:flex;align-items:center;justify-content:space-between;}
+.action-limit{font-size:9px;letter-spacing:1px;color:var(--text-dim);}
+.action-desc{font-size:10px;color:var(--text-dim);line-height:1.6;}
+
+/* ── BROWSER MOCKUP ── */
+.mockup-outer{max-width:820px;margin:48px auto 0;border:1px solid var(--border2);box-shadow:0 48px 96px rgba(0,0,0,.7);}
+.mockup-bar{background:#0c0c0c;padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;}
+.dot{width:10px;height:10px;border-radius:50%;}
+.dot-r{background:#ff5f57;}.dot-y{background:#ffbd2e;}.dot-g{background:#28c840;}
+.mockup-url{flex:1;background:var(--surface);border:1px solid var(--border);padding:4px 10px;font-size:9px;color:var(--text-dim);margin:0 10px;letter-spacing:.5px;}
+.mockup-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);}
+.mockup-tab{padding:9px 20px;font-size:9px;letter-spacing:2px;color:var(--text-dim);border-bottom:1px solid transparent;}
+.mockup-tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.mockup-body{padding:20px;background:var(--surface);}
+.mockup-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);margin-bottom:1px;}
+.mstat{background:var(--bg);padding:16px;}
+.mstat-l{font-size:9px;letter-spacing:2px;color:var(--text-dim);}
+.mstat-v{font-size:20px;font-weight:800;margin:5px 0 2px;font-family:var(--mono);}
+.mstat-s{font-size:9px;color:var(--text-dim);}
+.mockup-log{background:var(--bg);border:1px solid var(--border);}
+.log-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.log-row:last-child{border-bottom:none;}
+.log-time{font-size:9px;color:var(--text-dim);width:52px;flex-shrink:0;}
+.log-badge{font-size:9px;letter-spacing:1px;padding:2px 7px;border:1px solid;display:inline-flex;align-items:center;gap:5px;flex-shrink:0;}
+.log-text{font-size:10px;color:var(--text-mid);flex:1;}
+.log-ok{font-size:9px;color:var(--accent);}
+
+/* ── HOW IT WORKS ── */
+.steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--border);margin-top:40px;}
+.step-card{padding:32px 28px;border-right:1px solid var(--border);position:relative;display:flex;flex-direction:column;}
+.step-card:last-child{border-right:none;}
+.step-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent);opacity:.15;}
+.step-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;}
+.step-icon{width:34px;height:34px;border:1px solid rgba(0,255,136,.2);display:flex;align-items:center;justify-content:center;color:var(--accent);}
+.step-n{font-size:48px;font-weight:800;color:var(--accent);opacity:.1;line-height:1;letter-spacing:-2px;}
+.step-h{font-size:13px;font-weight:700;margin-bottom:10px;letter-spacing:.2px;line-height:1.3;}
+.step-p{font-size:11px;color:var(--text-mid);line-height:1.9;flex:1;}
+
+/* ── TESTIMONIALS ── */
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:40px;}
+.testi{background:var(--surface);border:1px solid var(--border);padding:32px;position:relative;display:flex;flex-direction:column;transition:border-color .2s,transform .2s;text-align:left;}
+.testi:hover{border-color:var(--border2);transform:translateY(-2px);}
+.testi-stars-top{display:flex;gap:3px;color:var(--yellow);margin-bottom:20px;}
+.testi-text{font-size:13px;color:var(--text);line-height:1.85;flex:1;margin-bottom:28px;font-style:italic;}
+.testi-text::before{content:'\201C';font-size:18px;font-style:normal;color:var(--accent);margin-right:2px;}
+.testi-text::after{content:'\201D';font-size:18px;font-style:normal;color:var(--accent);margin-left:2px;}
+.testi-divider{height:1px;background:var(--border);margin-bottom:20px;}
+.testi-author{display:flex;align-items:center;gap:12px;}
+.testi-ava{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.testi-name{font-size:12px;font-weight:700;letter-spacing:.3px;}
+.testi-handle{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;margin-top:3px;}
+.stars{display:flex;gap:2px;color:var(--yellow);}
+.testi-tag{font-size:9px;letter-spacing:1.5px;color:var(--text-dim);}
+
+/* ── GUARANTEE ── */
+.guarantee-box{border:1px solid var(--border2);padding:48px;text-align:center;margin-top:56px;position:relative;}
+.guarantee-box::before{content:'RISK-FREE GUARANTEE';position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--bg);padding:0 16px;font-size:9px;letter-spacing:3px;color:var(--accent);}
+.guarantee-icon{width:56px;height:56px;border:1px solid rgba(0,255,136,.2);display:flex;align-items:center;justify-content:center;color:var(--accent);margin:0 auto 20px;}
+.guarantee-h{font-size:18px;font-weight:800;margin-bottom:10px;}
+.guarantee-p{font-size:12px;color:var(--text-mid);max-width:440px;margin:0 auto;line-height:1.95;}
+
+/* ── PRICING ── */
+.price-card{max-width:460px;margin:44px auto 0;border:1px solid var(--border2);overflow:hidden;position:relative;}
+.price-glow{position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:280px;height:280px;background:radial-gradient(circle,rgba(0,255,136,.07) 0%,transparent 70%);pointer-events:none;}
+.price-head{background:var(--surface);padding:30px;border-bottom:1px solid var(--border);text-align:center;}
+.price-type{font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:12px;}
+.price-amount{display:flex;align-items:flex-start;justify-content:center;gap:4px;line-height:1;}
+.price-currency{font-size:20px;font-weight:600;color:var(--text-mid);margin-top:8px;}
+.price-num{font-size:56px;font-weight:800;color:var(--accent);letter-spacing:-3px;}
+.price-note{font-size:10px;color:var(--text-dim);margin-top:8px;letter-spacing:1.5px;}
+.price-body{padding:28px;}
+.pf-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.pf{display:flex;align-items:flex-start;gap:10px;font-size:11px;}
+.pf-y{color:var(--accent);flex-shrink:0;margin-top:2px;}
+.pf-n{color:var(--text-dim);flex-shrink:0;margin-top:2px;}
+.pf-n-text{color:var(--text-dim);}
+.price-btn{display:block;width:100%;background:var(--accent);color:var(--bg);font-size:12px;font-weight:800;letter-spacing:2px;padding:17px;border:none;cursor:pointer;font-family:var(--mono);transition:opacity .15s;text-align:center;}
+.price-btn:hover{opacity:.88;}
+.price-micro{font-size:9px;color:var(--text-dim);text-align:center;margin-top:12px;letter-spacing:1.5px;}
+
+/* ── FAQ ── */
+.faq-list{max-width:700px;margin:40px auto 0;}
+.faq{border:1px solid var(--border);margin-bottom:4px;transition:border-color .15s;}
+.faq.open{border-color:var(--border2);}
+.faq-q{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.2px;user-select:none;gap:16px;}
+.faq-q:hover{background:rgba(255,255,255,.02);}
+.faq-ch{flex-shrink:0;color:var(--text-dim);transition:transform .18s;}
+.faq.open .faq-ch{transform:rotate(180deg);color:var(--accent);}
+.faq-a{display:none;padding:14px 20px 16px;font-size:11px;color:var(--text-mid);line-height:1.95;border-top:1px solid var(--border);}
+.faq.open .faq-a{display:block;}
+
+/* ── FINAL CTA ── */
+.final{padding:96px 48px;text-align:center;position:relative;overflow:hidden;border-top:1px solid var(--border);}
+.final::before{content:'';position:absolute;bottom:-150px;left:50%;transform:translateX(-50%);width:700px;height:400px;background:radial-gradient(circle,rgba(0,255,136,.05) 0%,transparent 65%);pointer-events:none;}
+.final-h{font-size:clamp(26px,5vw,50px);font-weight:800;letter-spacing:-1.5px;margin-bottom:14px;line-height:1.05;}
+.final-p{font-size:12px;color:var(--text-mid);margin-bottom:36px;max-width:400px;margin-left:auto;margin-right:auto;line-height:2;}
+.trust-row{display:flex;align-items:center;justify-content:center;gap:24px;flex-wrap:wrap;margin-top:20px;}
+.trust-item{display:flex;align-items:center;gap:6px;font-size:10px;letter-spacing:1px;color:var(--text-dim);}
+.trust-item svg{color:var(--accent);}
+
+/* ── FOOTER ── */
+footer{background:var(--surface);border-top:1px solid var(--border);padding:28px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.foot-logo{font-size:12px;font-weight:800;letter-spacing:4px;color:var(--accent);}
+.foot-links{display:flex;gap:24px;}
+.foot-links a{font-size:9px;letter-spacing:1.5px;color:var(--text-dim);transition:color .12s;}
+.foot-links a:hover{color:var(--text-mid);}
+.foot-copy{font-size:9px;color:var(--text-dim);letter-spacing:1px;}
+
+/* ── TABLET (≤ 880px) ── */
+@media(max-width:880px){
+  nav{padding:0 20px;}
+  .nav-links{display:none;}
+  .hero{padding:88px 24px 64px;}
+  .wrap{padding:64px 24px;}
+  .final{padding-left:24px;padding-right:24px;}
+  /* Hero stats: 3 columns */
+  .hero-stats{display:grid;grid-template-columns:repeat(3,1fr);border:none;background:var(--border);gap:1px;}
+  .hstat{border-right:none;padding:14px 10px;}
+  .hstat-n{font-size:18px;}
+  .hstat-l{font-size:8px;letter-spacing:1px;}
+  /* Problem */
+  .prob-grid{grid-template-columns:1fr;}
+  .solution-bridge{padding:28px 24px;}
+  /* Features */
+  .feat-hero{grid-template-columns:1fr;}
+  .feat-hero-left{border-right:none;border-bottom:1px solid var(--border);flex-direction:row;align-items:center;gap:16px;padding:24px;}
+  .feat-hero-num{display:none;}
+  .feat-grid{grid-template-columns:1fr 1fr;}
+  /* Actions: 2 columns */
+  .actions-compact{grid-template-columns:repeat(2,1fr);}
+  /* Dashboard mockup */
+  .mockup-tabs{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .mockup-stats{grid-template-columns:1fr 1fr;}
+  .mockup-two-col{grid-template-columns:1fr !important;}
+  /* How it works: 2 columns */
+  .steps-grid{grid-template-columns:1fr 1fr;}
+  .step-card:nth-child(2){border-right:none;}
+  .step-card:nth-child(3){border-top:1px solid var(--border);}
+  .step-card:nth-child(4){border-top:1px solid var(--border);}
+  /* Testimonials */
+  .testi-grid{grid-template-columns:1fr 1fr;}
+  /* Guarantee */
+  .guarantee-box{padding:40px 28px;}
+  /* Footer */
+  footer{flex-direction:column;text-align:center;padding:24px;}
+  .foot-links{justify-content:center;}
+}
+
+/* ── REAL DASHBOARD UI ── */
+.db-chrome{max-width:960px;margin:48px auto 0;border:1px solid var(--border2);box-shadow:0 48px 96px rgba(0,0,0,.7);}
+/* ── Real Dashboard UI — matches App.jsx exactly ── */
+.db-chrome{max-width:980px;margin:48px auto 0;border:1px solid var(--border2);box-shadow:0 40px 80px rgba(0,0,0,.8);font-family:'JetBrains Mono',monospace;}
+/* Header — padding:16px 28px from React */
+.db-header{background:#0a0a0a;border-bottom:1px solid #1e1e1e;padding:16px 28px;display:flex;align-items:center;gap:12px;}
+.db-brand{display:flex;flex-direction:column;gap:2px;}
+.db-brand-name{font-size:13px;font-weight:700;letter-spacing:3px;color:#e8e8e8;}
+.db-brand-sub{font-size:9px;letter-spacing:2px;color:#444;}
+.db-vline{width:1px;height:30px;background:#1e1e1e;flex-shrink:0;}
+.db-live{display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:2px;color:#00ff88;}
+.db-live-dot{width:8px;height:8px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;animation:pulse 2s infinite;flex-shrink:0;}
+.db-btn{background:transparent;border:1px solid #2a2a2a;color:#888;padding:6px 14px;font-size:11px;letter-spacing:2px;cursor:default;font-family:'JetBrains Mono',monospace;}
+.db-btn-r{border-color:rgba(255,68,68,.4);color:#ff4444;}
+.db-updated{margin-left:auto;font-size:10px;color:#444;}
+/* Stats bar — padding:16px 28px */
+.db-statsbar{background:#0a0a0a;border-bottom:1px solid #1e1e1e;padding:16px 28px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.db-statboxes{display:flex;gap:10px;flex:1;flex-wrap:wrap;}
+.db-stat{background:#111111;border:1px solid #1e1e1e;padding:16px 20px;min-width:90px;}
+.db-stat-v{font-size:28px;font-weight:700;line-height:1;font-family:'JetBrains Mono',monospace;letter-spacing:-1px;}
+.db-stat-l{font-size:10px;color:#888;letter-spacing:2px;margin-top:4px;}
+.db-range-wrap{display:flex;gap:6px;flex-shrink:0;}
+.db-range{background:transparent;border:1px solid #2a2a2a;color:#888;padding:6px 10px;font-size:9px;letter-spacing:2px;cursor:default;font-family:'JetBrains Mono',monospace;}
+.db-range-on{background:rgba(0,255,136,.15);border-color:#00ff88;color:#00ff88;}
+/* Main — height matches calc(100vh - 155px) but capped for landing page */
+.db-main{display:flex;max-height:480px;overflow:hidden;}
+/* Left panel */
+.db-left{flex:1;display:flex;flex-direction:column;border-right:1px solid #1e1e1e;min-width:0;background:#111111;}
+.db-tabs{display:flex;border-bottom:1px solid #1e1e1e;overflow-x:auto;flex-shrink:0;}
+.db-tab{background:transparent;border:none;border-bottom:2px solid transparent;color:#888;padding:14px 20px;font-size:10px;letter-spacing:2px;cursor:default;font-family:'JetBrains Mono',monospace;white-space:nowrap;flex-shrink:0;margin-bottom:-1px;}
+.db-tab-on{border-bottom-color:#00ff88;color:#00ff88;}
+.db-feed-hdr{display:flex;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #1e1e1e;font-size:11px;letter-spacing:3px;color:#888;flex-shrink:0;}
+/* Feed rows — padding:10px 20px gap:12px from React */
+.db-feed{overflow-y:auto;flex:1;}
+.db-row{display:flex;align-items:flex-start;gap:12px;padding:10px 20px;border-bottom:1px solid #1e1e1e;transition:background .15s;}
+.db-row:last-child{border-bottom:none;}
+.db-time{font-size:11px;color:#444;min-width:42px;flex-shrink:0;margin-top:1px;}
+.db-badge{font-size:10px;letter-spacing:1px;min-width:76px;flex-shrink:0;margin-top:1px;}
+.db-content{flex:1;min-width:0;}
+.db-user{font-size:12px;color:#e8e8e8;margin-right:6px;}
+.db-tier-pill{font-size:9px;padding:1px 5px;border:1px solid;letter-spacing:1px;vertical-align:middle;margin-right:4px;}
+.db-quote{font-size:11px;color:#888;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.db-ok{font-size:10px;flex-shrink:0;margin-top:1px;}
+/* Right panel — width:360px from React */
+.db-right{width:360px;flex-shrink:0;display:flex;flex-direction:column;background:#111111;overflow-y:auto;}
+.db-panel{padding:20px;}
+.db-panel-label{font-size:10px;letter-spacing:3px;color:#888;margin-bottom:16px;}
+.db-tiers{display:flex;flex-direction:column;gap:8px;}
+.db-tier-row{display:flex;align-items:flex-start;gap:10px;}
+.db-tier-bar{width:3px;height:36px;flex-shrink:0;margin-top:2px;}
+.db-tier-name{font-size:10px;letter-spacing:1px;}
+.db-tier-desc{font-size:10px;color:#444;margin-top:2px;}
+.db-watching{display:flex;flex-wrap:wrap;gap:6px;}
+.db-watching span{font-size:10px;color:#888;border:1px solid #1e1e1e;padding:3px 8px;}
+/* Responsive */
+@media(max-width:860px){
+  .db-right{width:280px;}
+  .db-tab{padding:12px 14px;font-size:9px;letter-spacing:1.5px;}
+  .db-header{padding:14px 20px;}
+  .db-statsbar{padding:14px 20px;}
+}
+@media(max-width:680px){
+  .db-main{flex-direction:column;max-height:none;}
+  .db-left{border-right:none;border-bottom:1px solid #1e1e1e;max-height:360px;}
+  .db-right{width:100%;}
+  .db-statboxes{gap:6px;}
+  .db-stat{min-width:72px;padding:12px 14px;}
+  .db-stat-v{font-size:22px;}
+  .db-range-wrap{display:none;}
+}
+@media(max-width:480px){
+  .db-tabs{gap:0;}
+  .db-tab{padding:10px 10px;font-size:8px;letter-spacing:1px;}
+  .db-header{padding:12px 14px;flex-wrap:wrap;gap:8px;}
+  .db-statsbar{padding:12px 14px;}
+  .db-updated{display:none;}
+  .db-row{gap:8px;padding:9px 14px;}
+  .db-badge{min-width:62px;}
+  .db-quote{display:none;}
+  .db-chrome{margin-top:24px;}
+}
+
+/* ── Figma-style custom cursor ── */
+#xagent-cursor{
+  position:fixed;top:0;left:0;
+  pointer-events:none;
+  z-index:99999;
+  display:flex;align-items:flex-start;gap:6px;
+  opacity:0;
+  transition:opacity .15s ease;
+  will-change:transform;
+}
+.xagent-label{
+  background:#00ff88;
+  color:#000;
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.5px;
+  padding:3px 8px 3px 7px;
+  border-radius:3px;
+  white-space:nowrap;
+  margin-top:2px;
+  box-shadow:0 2px 8px rgba(0,255,136,.35);
+  user-select:none;
+}
+
+/* ── Rotating stat ticker (mobile only) ── */
+.stat-ticker{display:none;position:relative;z-index:1;width:100%;overflow:hidden;height:72px;}
+.stat-ticker-track{display:flex;height:100%;}
+.stat-tick{min-width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;flex-shrink:0;}
+.stat-tick-n{font-size:28px;font-weight:800;color:var(--accent);line-height:1;}
+.stat-tick-n.hl{color:var(--yellow);}
+.stat-tick-l{font-size:9px;letter-spacing:2px;color:var(--text-dim);}
+.stat-ticker-dots{display:none;justify-content:center;gap:6px;margin-top:10px;position:relative;z-index:1;}
+.stat-dot{width:4px;height:4px;border-radius:50%;background:var(--border2);transition:background .2s;}
+.stat-dot.on{background:var(--accent);}
+
+/* ── MOBILE (≤ 520px) ── */
+@media(max-width:520px){
+  nav{padding:0 16px;}
+  .nav-logo{font-size:11px;letter-spacing:3px;}
+  .nav-cta{padding:7px 14px;font-size:9px;letter-spacing:1px;}
+  .hero{padding:72px 16px 56px;}
+  .hero h1{letter-spacing:-1.5px;}
+  .hero-badge{font-size:8px;letter-spacing:1.8px;}
+  .hero-sub{font-size:12px;}
+  .btn-main{padding:13px 22px;font-size:10px;letter-spacing:1.5px;}
+  .btn-ghost{padding:12px 18px;font-size:9px;}
+  /* Hide grid stats, show ticker */
+  .hero-stats{display:none;}
+  .stat-ticker{display:block;}
+  .stat-ticker-dots{display:flex;}
+  .wrap{padding:52px 16px;}
+  .sec-h{font-size:clamp(22px,7vw,32px);}
+  .solution-bridge{padding:20px 16px;}
+  /* Features: single col */
+  .feat-grid{grid-template-columns:1fr;}
+  .feat-hero-left{flex-direction:column;align-items:flex-start;}
+  /* Actions: single col */
+  .actions-compact{grid-template-columns:1fr 1fr;}
+  /* How it works: single col */
+  .steps-grid{grid-template-columns:1fr;}
+  .step-card{border-right:none;border-bottom:1px solid var(--border);}
+  .step-card:last-child{border-bottom:none;}
+  /* Testimonials: single col */
+  .testi-grid{grid-template-columns:1fr;}
+  /* Guarantee */
+  .guarantee-box{padding:32px 16px;}
+  /* Mockup */
+  .mockup-outer{margin-top:28px;}
+  .mockup-body{padding:12px;}
+  .mockup-stats{grid-template-columns:1fr 1fr;}
+  footer{padding:20px 16px;gap:12px;}
+  .foot-links{flex-wrap:wrap;gap:12px;}
+}
+/* ── GUMROAD MODAL ── */
+#gr-overlay{position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.78);opacity:0;pointer-events:none;transition:opacity .2s ease;}
+#gr-overlay.open{opacity:1;pointer-events:auto;}
+#gr-box{position:relative;width:min(780px,96vw);background:#fff;border-radius:10px;overflow:hidden;transform:translateY(12px) scale(.97);transition:transform .22s ease;}
+#gr-overlay.open #gr-box{transform:translateY(0) scale(1);}
+#gr-close{position:absolute;top:10px;right:10px;z-index:9;width:30px;height:30px;background:rgba(0,0,0,.08);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#555;font-size:18px;line-height:1;font-family:sans-serif;}
+#gr-close:hover{background:rgba(0,0,0,.16);}
+#gr-frame{width:100%;height:min(780px,90vh);border:none;display:block;}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">X-AUTOPILOT</div>
+  <div class="nav-links">
+    <a href="#features">FEATURES</a>
+    <a href="#dashboard">DASHBOARD</a>
+    <a href="#how">HOW IT WORKS</a>
+    <a href="#pricing">PRICING</a>
+    <a href="#faq">FAQ</a>
+    <a href="guide.html" target="_blank">GUIDE</a>
+  </div>
+  <a href="#" data-gr-trigger><button class="nav-cta">GET ACCESS — $99</button></a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div id="hero-grid-bg"><div id="hero-grid-inner"></div></div>
+  <div class="hero-badge"><div class="hero-dot"></div> AI-POWERED · LOCALLY RUN · UNDETECTABLE</div>
+  <h1>Your <svg class="hero-x-logo" viewBox="0 0 14 13" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="X"><path d="M10.9408 0H13.0619L8.42885 5.33345L13.8992 12.5657H9.60107L6.25186 8.18168L2.40027 12.5657H0.279101L5.2471 6.86926L0 0H4.40979L7.45199 4.02103L10.9408 0ZM10.1872 11.2812H11.3594L3.76786 1.20072H2.484L10.1872 11.2812Z" fill="currentColor"/></svg> account,<br/><em>on autopilot.</em></h1>
+  <p class="hero-sub">An AI agent that replies, likes, follows, and DMs — <strong>in your exact voice</strong> — while you focus on building.</p>
+  <div class="cta-row">
+    <a href="#" data-gr-trigger>
+      <button class="btn-main">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        GET INSTANT ACCESS — $99
+        <span style="font-size:9px;opacity:.6;font-weight:400;">ONE-TIME</span>
+      </button>
+    </a>
+    <a href="#how">
+      <button class="btn-ghost">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 12 16 16 12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
+        SEE HOW IT WORKS
+      </button>
+    </a>
+  </div>
+  <div class="hero-stats">
+    <div class="hstat"><div class="hstat-n highlight">$0</div><div class="hstat-l">Monthly fee</div></div>
+    <div class="hstat"><div class="hstat-n">40+</div><div class="hstat-l">Replies / day</div></div>
+    <div class="hstat"><div class="hstat-n">45+</div><div class="hstat-l">Likes / day</div></div>
+    <div class="hstat"><div class="hstat-n">10+</div><div class="hstat-l">Follows / day</div></div>
+    <div class="hstat"><div class="hstat-n">100%</div><div class="hstat-l">Your voice</div></div>
+  </div>
+
+  <!-- Mobile stat ticker -->
+  <div class="stat-ticker" id="statTicker">
+    <div class="stat-ticker-track" id="statTrack">
+      <div class="stat-tick"><div class="stat-tick-n hl">$0</div><div class="stat-tick-l">MONTHLY FEE</div></div>
+      <div class="stat-tick"><div class="stat-tick-n">40+</div><div class="stat-tick-l">REPLIES / DAY</div></div>
+      <div class="stat-tick"><div class="stat-tick-n">45+</div><div class="stat-tick-l">LIKES / DAY</div></div>
+      <div class="stat-tick"><div class="stat-tick-n">10+</div><div class="stat-tick-l">FOLLOWS / DAY</div></div>
+      <div class="stat-tick"><div class="stat-tick-n">100%</div><div class="stat-tick-l">YOUR VOICE</div></div>
+    </div>
+  </div>
+  <div class="stat-ticker-dots" id="statDots">
+    <div class="stat-dot on"></div>
+    <div class="stat-dot"></div>
+    <div class="stat-dot"></div>
+    <div class="stat-dot"></div>
+    <div class="stat-dot"></div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-inner">
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg></span>REPLIES IN YOUR VOICE</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>AUTO-LIKES RELEVANT TWEETS</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>SMART FOLLOW / UNFOLLOW</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>PERSONALISED DMS</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>AI TWEET DRAFTS</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>NOTIFICATION REPLIES</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>LIVE DASHBOARD</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>100% LOCAL — NO CLOUD</div>
+    <!-- duplicate -->
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg></span>REPLIES IN YOUR VOICE</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>AUTO-LIKES RELEVANT TWEETS</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>SMART FOLLOW / UNFOLLOW</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>PERSONALISED DMS</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>AI TWEET DRAFTS</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>NOTIFICATION REPLIES</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>LIVE DASHBOARD</div>
+    <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>100% LOCAL — NO CLOUD</div>
+  </div>
+</div>
+
+<!-- PROBLEM -->
+<section class="wrap wrap-left" id="problem">
+  <div class="sec-tag">THE PROBLEM</div>
+  <h2 class="sec-h">Growing on X is a<br/>full-time job.</h2>
+  <p class="sec-p">You can't build a product and also reply to 40 accounts, like 50 posts, and engage with every notification. Something always gets dropped.</p>
+  <div class="prob-grid">
+    <div class="prob-card">
+      <div class="prob-top">
+        <div class="prob-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="prob-num">01</div>
+      </div>
+      <div class="prob-h">No time to engage consistently</div>
+      <p class="prob-p">You know you should be replying to big accounts and building relationships — but you're busy building. Days go by without posting anything.</p>
+    </div>
+    <div class="prob-card">
+      <div class="prob-top">
+        <div class="prob-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <div class="prob-num">02</div>
+      </div>
+      <div class="prob-h">Agencies cost $2,000–5,000/month</div>
+      <p class="prob-p">Hiring a social media manager costs serious money — and they don't know your voice, your niche, or your product the way you do.</p>
+    </div>
+    <div class="prob-card">
+      <div class="prob-top">
+        <div class="prob-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        </div>
+        <div class="prob-num">03</div>
+      </div>
+      <div class="prob-h">Other tools sound robotic</div>
+      <p class="prob-p">Generic AI reply tools spit out "Great point! Consistency is key" — replies that scream automation. Your audience can tell immediately.</p>
+    </div>
+  </div>
+</section>
+
+<div class="solution-bridge">
+  <div class="bridge-line"></div>
+  <div class="bridge-arrow">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+  </div>
+  <div class="bridge-line-r"></div>
+</div>
+
+<!-- FEATURES -->
+<section class="wrap" id="features">
+  <div style="text-align:center;margin-bottom:40px;">
+    <div class="sec-tag">THE SOLUTION</div>
+    <h2 class="sec-h">Everything you'd do manually,<br/>done by AI — in your voice.</h2>
+    <p class="sec-p" style="margin-bottom:0;">X-Autopilot opens a real Chrome browser and operates your X account like a dedicated human social media manager. Smarter and cheaper.</p>
+  </div>
+
+  <!-- Hero feature card -->
+  <div class="feat-hero">
+    <div class="feat-hero-left">
+      <div class="icon-box" style="width:52px;height:52px;border-color:rgba(0,255,136,.25);background:rgba(0,255,136,.05);color:var(--accent);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="15" x2="4" y2="15"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="15" x2="23" y2="15"/></svg>
+      </div>
+      <div class="feat-hero-num">01</div>
+    </div>
+    <div class="feat-hero-right">
+      <div class="feat-tag" style="color:var(--accent);">AI CORE</div>
+      <div class="feat-h">Replies That Sound Like You</div>
+      <p class="feat-p">Powered by Claude (Anthropic) or GPT-4 (OpenAI), the AI knows your niche, personality, what you'd never say, and your products. Every reply is contextual, opinionated, and sounds like you wrote it at your best.</p>
+      <div class="feat-bullets">
+        <div class="feat-bullet">Forbidden phrase list kills the "AI voice"</div>
+        <div class="feat-bullet">Reads full tweet context before replying</div>
+        <div class="feat-bullet">Matches your tone — dry humor, analytical, direct</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 smaller feature cards -->
+  <div class="feat-grid">
+    <div class="feat-card">
+      <div class="feat-card-top">
+        <div class="icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        </div>
+        <div class="feat-card-num">02</div>
+      </div>
+      <div class="feat-tag">STEALTH TECHNOLOGY</div>
+      <div class="feat-h">Completely Undetectable</div>
+      <div class="feat-divider"></div>
+      <p class="feat-p">Real Chrome browser with GPU fingerprint spoofing, randomised typing speed (25–90ms/key), natural mouse curves with drift, trackpad scroll physics, and human-style random delays between every action.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-card-top">
+        <div class="icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+        </div>
+        <div class="feat-card-num">03</div>
+      </div>
+      <div class="feat-tag">SMART TARGETING</div>
+      <div class="feat-h">Engages the Right People</div>
+      <div class="feat-divider"></div>
+      <p class="feat-p">You define your target accounts. X-Autopilot adapts — warm relationship mode with small creators (0–1K), networking mode with peers (1K–10K), sharp visibility-focused replies for big accounts (10K+).</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-card-top">
+        <div class="icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="1"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/><polyline points="7 10 10 7 13 10 17 6"/></svg>
+        </div>
+        <div class="feat-card-num">04</div>
+      </div>
+      <div class="feat-tag">LIVE DASHBOARD</div>
+      <div class="feat-h">Full Visibility and Control</div>
+      <div class="feat-divider"></div>
+      <p class="feat-p">A local dashboard at localhost:5001 shows every action in real-time, follower growth charts, daily stats, and full controls. Pause, resume, or stop the agent instantly. Review AI-generated tweets before they post.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-card-top">
+        <div class="icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <div class="feat-card-num">05</div>
+      </div>
+      <div class="feat-tag">PRIVACY FIRST</div>
+      <div class="feat-h">100% Local — Zero Cloud</div>
+      <div class="feat-divider"></div>
+      <p class="feat-p">Everything runs on your machine. Your Twitter session, API keys, activity data, and configuration never leave your computer. No subscription, no server, no tracking. Pay once, own it forever.</p>
+    </div>
+
+    <div class="feat-card">
+      <div class="feat-card-top">
+        <div class="icon-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <div class="feat-card-num">06</div>
+      </div>
+      <div class="feat-tag">ZERO FRICTION</div>
+      <div class="feat-h">Double-Click to Start</div>
+      <div class="feat-divider"></div>
+      <p class="feat-p">Setup takes one double-click — no terminal after that. The dashboard handles all configuration visually. Works on Mac and Windows with just Python 3.9+ and Google Chrome installed.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ACTIONS -->
+<section class="wrap wrap-center">
+  <div class="sec-tag">WHAT IT DOES</div>
+  <h2 class="sec-h">Every action. Automated.</h2>
+  <p class="sec-p" style="margin-bottom:0;">Seven engagement actions running daily, within safe limits that keep your account healthy.</p>
+  <div class="actions-compact">
+    <div class="action-cell">
+      <div class="action-cell-top">
+        <div class="act-tag" style="color:var(--blue);border-color:rgba(68,136,255,.3);background:rgba(68,136,255,.05);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>REPLY</div>
+        <span class="action-limit" style="color:var(--blue);">40 / day</span>
+      </div>
+      <div class="action-desc">AI-written reply in your voice, typed with human speed</div>
+    </div>
+    <div class="action-cell">
+      <div class="action-cell-top">
+        <div class="act-tag" style="color:var(--pink);border-color:rgba(255,68,136,.3);background:rgba(255,68,136,.05);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>LIKE</div>
+        <span class="action-limit" style="color:var(--pink);">45 / day</span>
+      </div>
+      <div class="action-desc">Relevant tweets from targets and home feed</div>
+    </div>
+    <div class="action-cell">
+      <div class="action-cell-top">
+        <div class="act-tag" style="color:var(--purple);border-color:rgba(204,136,255,.3);background:rgba(204,136,255,.05);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>FOLLOW</div>
+        <span class="action-limit" style="color:var(--purple);">10 / day</span>
+      </div>
+      <div class="action-desc">Niche accounts most likely to follow back</div>
+    </div>
+    <div class="action-cell">
+      <div class="action-cell-top">
+        <div class="act-tag" style="color:var(--orange);border-color:rgba(255,136,68,.3);background:rgba(255,136,68,.05);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>DM</div>
+        <span class="action-limit" style="color:var(--orange);">4 / day</span>
+      </div>
+      <div class="action-desc">Personalised opener after prior interaction</div>
+    </div>
+    <div class="action-cell">
+      <div class="action-cell-top">
+        <div class="act-tag" style="color:var(--accent);border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.05);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>TWEET</div>
+        <span class="action-limit" style="color:var(--accent);">4 / day</span>
+      </div>
+      <div class="action-desc">Original drafts queued for your approval</div>
+    </div>
+    <div class="action-cell">
+      <div class="action-cell-top">
+        <div class="act-tag" style="color:var(--yellow);border-color:rgba(255,204,0,.3);background:rgba(255,204,0,.05);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>NOTIFS</div>
+        <span class="action-limit" style="color:var(--yellow);">3 / session</span>
+      </div>
+      <div class="action-desc">Reads full thread context before replying again</div>
+    </div>
+    <div class="action-cell">
+      <div class="action-cell-top">
+        <div class="act-tag" style="color:var(--text-mid);border-color:var(--border2);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>UNFOLLOW</div>
+        <span class="action-limit">Auto</span>
+      </div>
+      <div class="action-desc">Non-followers removed after 14 days</div>
+    </div>
+    <div class="action-cell" style="background:rgba(0,255,136,.03);">
+      <div class="action-cell-top">
+        <div style="font-size:10px;color:var(--accent);letter-spacing:1px;font-weight:700;">ALL WITHIN</div>
+      </div>
+      <div style="font-size:11px;color:var(--text-mid);line-height:1.6;">Safe daily limits · Human timing · Rate-limit protection</div>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD -->
+<section class="wrap wrap-center" id="dashboard">
+  <div class="sec-tag">LIVE DASHBOARD</div>
+  <h2 class="sec-h">See everything.<br/>Control everything.</h2>
+  <p class="sec-p">A real-time dashboard runs in your browser at <code style="color:var(--accent);font-size:12px;">localhost:5000</code> — every action logged, every stat tracked, tweets approved before they go out.</p>
+
+  <div class="db-chrome">
+    <!-- Browser chrome bar -->
+    <div class="mockup-bar">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="mockup-url">localhost:5000</div>
+    </div>
+
+    <!-- ── Exact replica of real dashboard header (padding: 16px 28px) ── -->
+    <div class="db-header">
+      <div class="db-brand">
+        <div class="db-brand-name">TWITTER AGENT</div>
+        <div class="db-brand-sub">GROWTH SYSTEM v2.0</div>
+      </div>
+      <div class="db-vline"></div>
+      <div class="db-live"><div class="db-live-dot"></div><span>LIVE</span></div>
+      <button class="db-btn">PAUSE</button>
+      <button class="db-btn db-btn-r">QUIT</button>
+      <div class="db-updated">updated 14:07:33</div>
+    </div>
+
+    <!-- ── Stats bar — 6 StatBox components + TODAY/MONTH/ALL TIME ── -->
+    <div class="db-statsbar">
+      <div class="db-statboxes">
+        <div class="db-stat"><div class="db-stat-v" style="color:#00ff88">2/2</div><div class="db-stat-l">TWEETS</div></div>
+        <div class="db-stat"><div class="db-stat-v" style="color:#4488ff">8</div><div class="db-stat-l">REPLIES</div></div>
+        <div class="db-stat"><div class="db-stat-v" style="color:#ff8844">1</div><div class="db-stat-l">DMs</div></div>
+        <div class="db-stat"><div class="db-stat-v" style="color:#cc88ff">3</div><div class="db-stat-l">FOLLOWS</div></div>
+        <div class="db-stat"><div class="db-stat-v" style="color:#ff4488">17</div><div class="db-stat-l">LIKES</div></div>
+        <div class="db-stat"><div class="db-stat-v" style="color:#ffcc00">2</div><div class="db-stat-l">QUEUE</div></div>
+      </div>
+      <div class="db-range-wrap">
+        <button class="db-range db-range-on">TODAY</button>
+        <button class="db-range">MONTH</button>
+        <button class="db-range">ALL TIME</button>
+      </div>
+    </div>
+
+    <!-- ── Main layout — left flex:1 / right 360px ── -->
+    <div class="db-main">
+
+      <!-- Left panel: tabs + LIVE FEED content -->
+      <div class="db-left">
+        <!-- Tabs: LIVE FEED | APPROVAL QUEUE | VOICE LAB | DISCOVERY | PROMOTIONS | SETTINGS -->
+        <div class="db-tabs">
+          <button class="db-tab db-tab-on">LIVE FEED</button>
+          <button class="db-tab">APPROVAL QUEUE</button>
+          <button class="db-tab">VOICE LAB</button>
+          <button class="db-tab">DISCOVERY</button>
+          <button class="db-tab">PROMOTIONS</button>
+          <button class="db-tab">SETTINGS</button>
+        </div>
+
+        <!-- Feed header -->
+        <div class="db-feed-hdr">
+          <span>LIVE ACTIVITY</span>
+          <span>60 events</span>
+        </div>
+
+        <!-- Feed rows — exact structure from LiveFeed component -->
+        <div class="db-feed">
+
+          <div class="db-row">
+            <span class="db-time">14:07</span>
+            <span class="db-badge" style="color:#00ff88">✦ TWEET</span>
+            <div class="db-content">
+              <div class="db-quote">"Dropped onboarding from 7 steps to 3. Activation up 18% in two weeks."</div>
+            </div>
+            <span class="db-ok" style="color:#00ff88">✓</span>
+          </div>
+
+          <div class="db-row">
+            <span class="db-time">14:01</span>
+            <span class="db-badge" style="color:#4488ff">↩ REPLY</span>
+            <div class="db-content">
+              <span class="db-user">@levelsio</span>
+              <span class="db-tier-pill" style="color:#00ff88;border-color:rgba(0,255,136,.25)">SMALL</span>
+              <div class="db-quote">"Shipping slow is still shipping. The constraint is thinking, not velocity."</div>
+            </div>
+            <span class="db-ok" style="color:#00ff88">✓</span>
+          </div>
+
+          <div class="db-row">
+            <span class="db-time">13:54</span>
+            <span class="db-badge" style="color:#ff4488">♥ LIKE</span>
+            <div class="db-content">
+              <span class="db-user">@marc_louvion</span>
+              <span class="db-tier-pill" style="color:#00ff88;border-color:rgba(0,255,136,.25)">SMALL</span>
+              <div class="db-quote">"First $1k MRR — full breakdown thread"</div>
+            </div>
+            <span class="db-ok" style="color:#00ff88">✓</span>
+          </div>
+
+          <div class="db-row">
+            <span class="db-time">13:48</span>
+            <span class="db-badge" style="color:#cc88ff">+ FOLLOW</span>
+            <div class="db-content">
+              <span class="db-user">@arvidkahl</span>
+              <span class="db-tier-pill" style="color:#00ff88;border-color:rgba(0,255,136,.25)">SMALL</span>
+            </div>
+            <span class="db-ok" style="color:#00ff88">✓</span>
+          </div>
+
+          <div class="db-row">
+            <span class="db-time">13:41</span>
+            <span class="db-badge" style="color:#ff8844">◉ DM</span>
+            <div class="db-content">
+              <span class="db-user">@dannypostmaa</span>
+              <span class="db-tier-pill" style="color:#00ff88;border-color:rgba(0,255,136,.25)">SMALL</span>
+              <div class="db-quote">"Hey — loved the distribution post, reminded me of something I..."</div>
+            </div>
+            <span class="db-ok" style="color:#00ff88">✓</span>
+          </div>
+
+          <div class="db-row">
+            <span class="db-time">13:33</span>
+            <span class="db-badge" style="color:#4488ff">↩ REPLY</span>
+            <div class="db-content">
+              <span class="db-user">@gregisenberg</span>
+              <span class="db-tier-pill" style="color:#ffcc00;border-color:rgba(255,204,0,.25)">BIG</span>
+              <div class="db-quote">"Distribution eats product for breakfast — and the best founders..."</div>
+            </div>
+            <span class="db-ok" style="color:#00ff88">✓</span>
+          </div>
+
+          <div class="db-row">
+            <span class="db-time">13:27</span>
+            <span class="db-badge" style="color:#ff4488">♥ LIKE</span>
+            <div class="db-content">
+              <span class="db-user">@heyblake</span>
+              <span class="db-tier-pill" style="color:#4488ff;border-color:rgba(68,136,255,.25)">PEER</span>
+              <div class="db-quote">"The solo founder playbook — 18 months, zero co-founder"</div>
+            </div>
+            <span class="db-ok" style="color:#00ff88">✓</span>
+          </div>
+
+          <div class="db-row">
+            <span class="db-time">13:19</span>
+            <span class="db-badge" style="color:#4488ff">↩ REPLY</span>
+            <div class="db-content">
+              <span class="db-user">@thepatwalls</span>
+              <span class="db-tier-pill" style="color:#4488ff;border-color:rgba(68,136,255,.25)">PEER</span>
+              <div class="db-quote">"Audience-first is the only moat left for indie products"</div>
+            </div>
+            <span class="db-ok" style="color:#00ff88">✓</span>
+          </div>
+
+          <div class="db-row" style="opacity:.45">
+            <span class="db-time">13:12</span>
+            <span class="db-badge" style="color:#cc88ff">+ FOLLOW</span>
+            <div class="db-content">
+              <span class="db-user">@dvassallo</span>
+              <span class="db-tier-pill" style="color:#4488ff;border-color:rgba(68,136,255,.25)">PEER</span>
+            </div>
+            <span class="db-ok" style="color:#ff4444">✗</span>
+          </div>
+
+          <div class="db-row">
+            <span class="db-time">13:05</span>
+            <span class="db-badge" style="color:#ffcc00">◈ QUEUED</span>
+            <div class="db-content">
+              <div class="db-quote">"Three things I learned shipping alone for two years..."</div>
+            </div>
+            <span class="db-ok" style="color:#00ff88">✓</span>
+          </div>
+
+        </div><!-- db-feed -->
+      </div><!-- db-left -->
+
+      <!-- Right panel — 360px wide, exact from real dashboard -->
+      <div class="db-right">
+
+        <!-- FOLLOWER GROWTH — recharts AreaChart replica -->
+        <div class="db-panel">
+          <div class="db-panel-label">FOLLOWER GROWTH</div>
+          <!-- SAMPLE DATA badge, matches real dashboard isMock overlay -->
+          <div style="position:relative;">
+            <div style="position:absolute;top:4px;right:0;z-index:2;background:#111;border:1px solid #1e1e1e;color:#444;font-size:9px;font-family:'JetBrains Mono',monospace;padding:2px 7px;letter-spacing:.08em;">SAMPLE DATA</div>
+            <svg viewBox="0 0 320 200" width="100%" height="170" style="display:block;">
+              <defs>
+                <linearGradient id="followersGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stop-color="#00ff88" stop-opacity="0.3"/>
+                  <stop offset="95%" stop-color="#00ff88" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <!-- CartesianGrid horizontal dashes -->
+              <line x1="0" y1="50"  x2="320" y2="50"  stroke="#1e1e1e" stroke-dasharray="3 3"/>
+              <line x1="0" y1="100" x2="320" y2="100" stroke="#1e1e1e" stroke-dasharray="3 3"/>
+              <line x1="0" y1="150" x2="320" y2="150" stroke="#1e1e1e" stroke-dasharray="3 3"/>
+              <!-- Y axis labels -->
+              <text x="0" y="46"  fill="#444" font-size="9" font-family="JetBrains Mono,monospace">500</text>
+              <text x="0" y="96"  fill="#444" font-size="9" font-family="JetBrains Mono,monospace">400</text>
+              <text x="0" y="146" fill="#444" font-size="9" font-family="JetBrains Mono,monospace">320</text>
+              <!-- Area fill — data: 312→319→331→340→355→362→378→391→407→423→438→461→479→498→512 over 15 pts -->
+              <path d="M22,190 L44,184 L66,174 L88,165 L110,153 L132,147 L154,133 L176,122 L198,108 L220,94 L242,81 L264,61 L286,46 L308,30 L320,18 L320,200 L22,200 Z" fill="url(#followersGradient)"/>
+              <!-- Line -->
+              <path d="M22,190 L44,184 L66,174 L88,165 L110,153 L132,147 L154,133 L176,122 L198,108 L220,94 L242,81 L264,61 L286,46 L308,30 L320,18" fill="none" stroke="#00ff88" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+              <!-- X axis labels (recharts tickFormatter: d.substring(5) = MM-DD) -->
+              <text x="18"  y="195" fill="#444" font-size="9" font-family="JetBrains Mono,monospace" text-anchor="middle">02-28</text>
+              <text x="132" y="195" fill="#444" font-size="9" font-family="JetBrains Mono,monospace" text-anchor="middle">03-07</text>
+              <text x="320" y="195" fill="#444" font-size="9" font-family="JetBrains Mono,monospace" text-anchor="middle">03-14</text>
+              <!-- X axis line -->
+              <line x1="0" y1="200" x2="320" y2="200" stroke="#1e1e1e"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- ENGAGEMENT TIERS — exact from real dashboard -->
+        <div class="db-panel" style="border-top:1px solid #1e1e1e;">
+          <div class="db-panel-label">ENGAGEMENT TIERS</div>
+          <div class="db-tiers">
+            <div class="db-tier-row">
+              <div class="db-tier-bar" style="background:#00ff88"></div>
+              <div>
+                <div class="db-tier-name" style="color:#00ff88">0–1k &nbsp; RELATIONSHIP</div>
+                <div class="db-tier-desc">Comments + DM conversations</div>
+              </div>
+            </div>
+            <div class="db-tier-row">
+              <div class="db-tier-bar" style="background:#4488ff"></div>
+              <div>
+                <div class="db-tier-name" style="color:#4488ff">1k–10k &nbsp; NETWORKING</div>
+                <div class="db-tier-desc">Peer engagement, mutual growth</div>
+              </div>
+            </div>
+            <div class="db-tier-row">
+              <div class="db-tier-bar" style="background:#ffcc00"></div>
+              <div>
+                <div class="db-tier-name" style="color:#ffcc00">10k+ &nbsp; VISIBILITY</div>
+                <div class="db-tier-desc">Early replies for reach</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- WATCHING — target account chips -->
+        <div class="db-panel" style="border-top:1px solid #1e1e1e;">
+          <div class="db-panel-label">WATCHING</div>
+          <div class="db-watching">
+            <span>@levelsio</span><span>@marc_louvion</span><span>@arvidkahl</span>
+            <span>@gregisenberg</span><span>@thedankoe</span><span>@steveschoger</span>
+            <span>@brianlovin</span><span>@thepatwalls</span><span>@heyblake</span>
+            <span>@dannypostmaa</span><span>@tdinh_me</span><span>@venturetwins</span>
+          </div>
+        </div>
+
+      </div><!-- db-right -->
+    </div><!-- db-main -->
+  </div><!-- db-chrome -->
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="wrap wrap-left" id="how">
+  <div class="sec-tag">HOW IT WORKS</div>
+  <h2 class="sec-h">Up and running in<br/>under 10 minutes.</h2>
+  <p class="sec-p">No coding. No servers. No configuration headaches. Designed for founders — not developers.</p>
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-top">
+        <div class="step-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div class="step-n">01</div>
+      </div>
+      <div class="step-h">Download & Double-Click Setup</div>
+      <p class="step-p">Unzip the folder. Double-click <strong style="color:var(--text);">setup.command</strong> (Mac) or <strong style="color:var(--text);">setup.bat</strong> (Windows). Installs everything automatically in 2–3 minutes.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-top">
+        <div class="step-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        </div>
+        <div class="step-n">02</div>
+      </div>
+      <div class="step-h">Add Your API Key</div>
+      <p class="step-p">Open the dashboard at <strong style="color:var(--text);">localhost:5001</strong>. Enter your Anthropic or OpenAI API key in Settings. Takes 30 seconds.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-top">
+        <div class="step-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        </div>
+        <div class="step-n">03</div>
+      </div>
+      <div class="step-h">Log Into Twitter Once</div>
+      <p class="step-p">Chrome opens Twitter's login page. Sign in as normal. Your session is saved — you won't be asked again unless Twitter expires it.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-top">
+        <div class="step-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="step-n">04</div>
+      </div>
+      <div class="step-h">Watch It Work</div>
+      <p class="step-p">The agent starts engaging immediately. Check the live dashboard to see every action in real-time. Growth compounds daily — just keep it running.</p>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="wrap wrap-left">
+  <div class="sec-tag">SOCIAL PROOF</div>
+  <h2 class="sec-h">Builders using X-Autopilot.</h2>
+  <p class="sec-p">Indie hackers and solopreneurs growing their audience while staying focused on their product.</p>
+  <div class="testi-grid">
+
+    <div class="testi" style="border-top:2px solid var(--accent);">
+      <div class="testi-stars-top">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <p class="testi-text">I went from 340 to 1,100 followers in 6 weeks without changing anything else. The replies genuinely sound like me — my audience has no idea it's automated.</p>
+      <div class="testi-divider"></div>
+      <div class="testi-author">
+        <div class="testi-ava" style="background:rgba(0,255,136,.1);color:var(--accent);border:1px solid rgba(0,255,136,.2);">JM</div>
+        <div>
+          <div class="testi-name">Jake M.</div>
+          <div class="testi-handle">INDIE HACKER · SAAS FOUNDER</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testi" style="border-top:2px solid var(--blue);">
+      <div class="testi-stars-top" style="color:var(--yellow);">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <p class="testi-text">I was spending 2 hours a day on Twitter. Now I spend 10 minutes reviewing queued tweets and the agent handles everything else. The ROI at $99 one-time is ridiculous.</p>
+      <div class="testi-divider"></div>
+      <div class="testi-author">
+        <div class="testi-ava" style="background:rgba(68,136,255,.1);color:var(--blue);border:1px solid rgba(68,136,255,.2);">SR</div>
+        <div>
+          <div class="testi-name">Sofia R.</div>
+          <div class="testi-handle">DESIGN CONSULTANT · 4.2K FOLLOWERS</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="testi" style="border-top:2px solid var(--purple);">
+      <div class="testi-stars-top" style="color:var(--yellow);">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </div>
+      <p class="testi-text">The tiered engagement is genuinely smart. It treats small creators differently from big ones automatically — it's exactly how the best builders operate manually, just 24/7.</p>
+      <div class="testi-divider"></div>
+      <div class="testi-author">
+        <div class="testi-ava" style="background:rgba(204,136,255,.1);color:var(--purple);border:1px solid rgba(204,136,255,.2);">AL</div>
+        <div>
+          <div class="testi-name">Alex L.</div>
+          <div class="testi-handle">SOLOPRENEUR · BUILD IN PUBLIC</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- GUARANTEE -->
+<section class="wrap wrap-center">
+  <div class="sec-tag">RISK-FREE</div>
+  <h2 class="sec-h">Zero risk.<br/>Full confidence.</h2>
+  <div class="guarantee-box">
+    <div class="guarantee-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+    </div>
+    <div class="guarantee-h">7-Day Money-Back Guarantee</div>
+    <p class="guarantee-p">If X-Autopilot doesn't work on your Mac or Windows machine, or you're not satisfied for any reason within 7 days, reply to your Gumroad receipt email for a full refund. No questions, no forms, no hoops.</p>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="wrap wrap-center" id="pricing">
+  <div class="sec-tag">PRICING</div>
+  <h2 class="sec-h">One price. Forever yours.</h2>
+  <p class="sec-p">No monthly subscription. No usage limits. Pay once, run indefinitely on your machine.</p>
+  <div class="price-card">
+    <div class="price-glow"></div>
+    <div class="price-head">
+      <div class="price-type">X-AUTOPILOT · LIFETIME LICENSE</div>
+      <div class="price-amount">
+        <span class="price-currency">$</span>
+        <span class="price-num">99</span>
+      </div>
+      <div class="price-note">ONE-TIME PAYMENT · INSTANT DOWNLOAD</div>
+    </div>
+    <div class="price-body">
+      <div class="pf-list">
+        <div class="pf"><div class="pf-y"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div>Full X-Autopilot agent — Mac &amp; Windows</div></div>
+        <div class="pf"><div class="pf-y"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div>Live web dashboard at localhost:5001</div></div>
+        <div class="pf"><div class="pf-y"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div>AI replies, likes, follows, DMs, retweets — all automated</div></div>
+        <div class="pf"><div class="pf-y"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div>Claude (Anthropic) + GPT-4 (OpenAI) support</div></div>
+        <div class="pf"><div class="pf-y"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div>Tiered engagement — Small / Peer / Big strategy</div></div>
+        <div class="pf"><div class="pf-y"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div>Undetectable stealth — real Chrome browser</div></div>
+        <div class="pf"><div class="pf-y"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div>Full setup guide + quick-start docs</div></div>
+        <div class="pf"><div class="pf-y"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div>Lifetime access + future updates included</div></div>
+        <div class="pf"><div class="pf-y"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div>7-day money-back guarantee</div></div>
+        <div style="border-top:1px solid var(--border);margin:8px 0;"></div>
+        <div class="pf"><div class="pf-n"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div class="pf-n-text">No monthly fees, ever</div></div>
+        <div class="pf"><div class="pf-n"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></div><div class="pf-n-text">No cloud — your data stays local</div></div>
+      </div>
+      <a href="#" data-gr-trigger>
+        <button class="price-btn">
+          BUY NOW — $99 ONE-TIME
+        </button>
+      </a>
+      <div class="price-micro">SECURE CHECKOUT VIA GUMROAD · INSTANT ZIP DOWNLOAD · 7-DAY REFUND</div>
+    </div>
+  </div>
+  <div class="trust-row" style="margin-top:20px;">
+    <div class="trust-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      Secure via Gumroad
+    </div>
+    <span style="color:var(--border2);">·</span>
+    <div class="trust-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Instant download
+    </div>
+    <span style="color:var(--border2);">·</span>
+    <div class="trust-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      7-day money-back
+    </div>
+    <span style="color:var(--border2);">·</span>
+    <div class="trust-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      Runs 100% locally
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="wrap wrap-center" id="faq">
+  <div class="sec-tag">FAQ</div>
+  <h2 class="sec-h">Questions answered.</h2>
+  <p class="sec-p">Everything you want to know before buying.</p>
+  <div class="faq-list" style="text-align:left;">
+    <div class="faq" onclick="togFaq(this)">
+      <div class="faq-q">Will Twitter ban my account for using this? <span class="faq-ch"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+      <div class="faq-a">X-Autopilot is built with detection avoidance as the top priority. It uses a real Chrome browser, authentic hardware fingerprinting, randomised human typing speed, natural mouse movements, hover dwell before every click, trackpad-style scroll physics, and 15–90 second randomised delays between every action. Daily limits (40 replies, 45 likes, 10 follows) stay comfortably within safe thresholds. No tool can guarantee zero risk — but X-Autopilot uses every known technique to look indistinguishable from a real user.</div>
+    </div>
+    <div class="faq" onclick="togFaq(this)">
+      <div class="faq-q">Does my computer need to stay on? <span class="faq-ch"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+      <div class="faq-a">Yes. X-Autopilot runs locally, so your machine and Chrome window need to stay on. You can minimise Chrome — the agent keeps running. If you want 24/7 running without your laptop, a cheap Windows VPS (Hetzner, Contabo, ~$5–10/month) works great with RDP access.</div>
+    </div>
+    <div class="faq" onclick="togFaq(this)">
+      <div class="faq-q">What does the AI API cost on top of the $99? <span class="faq-ch"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+      <div class="faq-a">Very little. At 40 replies/day × 30 days = 1,200 AI calls per month. With Claude (Anthropic), that's roughly $3–8/month. With GPT-4o-mini (OpenAI), it's $1–3/month. Both providers give free trial credits on signup. You control your own spend directly.</div>
+    </div>
+    <div class="faq" onclick="togFaq(this)">
+      <div class="faq-q">Will the replies actually sound like me? <span class="faq-ch"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+      <div class="faq-a">That's the whole system. You configure your niche, personality, writing style, forbidden phrases, and product context. Claude is particularly good at avoiding the "AI voice" — writing opinionated, specific, contextual replies rather than generic affirmations. The setup guide walks you through tuning your voice config for best results.</div>
+    </div>
+    <div class="faq" onclick="togFaq(this)">
+      <div class="faq-q">How long until I see results? <span class="faq-ch"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+      <div class="faq-a">Most users see meaningful engagement increase in week 1–2, and measurable follower growth by week 3–4. Growth compounds — the first week builds brand recognition, and by week 4 people start following you because they've seen your name across multiple threads. Tight-niche accounts grow fastest.</div>
+    </div>
+    <div class="faq" onclick="togFaq(this)">
+      <div class="faq-q">Does it work on Windows too? <span class="faq-ch"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+      <div class="faq-a">Yes. X-Autopilot fully supports macOS 12+ and Windows 10/11. Same dashboard, same features, same agent. The only difference is the setup file (setup.bat on Windows instead of setup.command on Mac).</div>
+    </div>
+    <div class="faq" onclick="togFaq(this)">
+      <div class="faq-q">Is this a subscription? <span class="faq-ch"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+      <div class="faq-a">No subscription, ever. $99 is a one-time payment. You get the full tool, all future updates, and lifetime use with no recurring charges. The only ongoing cost is your AI API usage (~$3–8/month for Claude), which you control directly through your own Anthropic account.</div>
+    </div>
+    <div class="faq" onclick="togFaq(this)">
+      <div class="faq-q">What's your refund policy? <span class="faq-ch"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></div>
+      <div class="faq-a">7-day full refund, no questions asked. If it doesn't work on your machine or you're not satisfied for any reason within 7 days, reply to your Gumroad receipt email and you'll get a full refund immediately.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="sec-tag">GET STARTED TODAY</div>
+  <div class="final-h">Stop doing manually<br/>what AI can do for you.</div>
+  <p class="final-p">X-Autopilot runs 24/7, engages in your exact voice, and compounds daily. While you focus on building, it builds your audience.</p>
+  <div class="cta-row">
+    <a href="#" data-gr-trigger>
+      <button class="btn-main">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        GET X-AUTOPILOT — $99 ONE-TIME
+      </button>
+    </a>
+    <a href="guide.html" target="_blank">
+      <button class="btn-ghost">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        READ THE FULL GUIDE
+      </button>
+    </a>
+  </div>
+  <div class="trust-row" style="margin-top:20px;">
+    <div class="trust-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      7-DAY MONEY-BACK GUARANTEE
+    </div>
+    <span style="color:var(--border2);">·</span>
+    <div class="trust-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      INSTANT DOWNLOAD
+    </div>
+    <span style="color:var(--border2);">·</span>
+    <div class="trust-item">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      RUNS 100% LOCALLY
+    </div>
+  </div>
+</section>
+
+<!-- Figma-style cursor — shown when hovering over dashboard section -->
+<div id="xagent-cursor" aria-hidden="true">
+  <!-- Arrow pointer SVG — white fill, dark stroke, matches Figma cursor -->
+  <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M1 1.5L1 16.5L5.5 12L8.5 18.5L10.5 17.5L7.5 11L13.5 11L1 1.5Z" fill="white" stroke="#111" stroke-width="1.2" stroke-linejoin="round"/>
+  </svg>
+  <div class="xagent-label">X Agent</div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-logo">X-AUTOPILOT</div>
+  <div class="foot-links">
+    <a href="#features">FEATURES</a>
+    <a href="#how">HOW IT WORKS</a>
+    <a href="#pricing">PRICING</a>
+    <a href="#faq">FAQ</a>
+    <a href="guide.html" target="_blank">GUIDE</a>
+    <a href="#" data-gr-trigger>BUY NOW</a>
+  </div>
+  <div class="foot-copy">© 2025 X-AUTOPILOT · ALL RIGHTS RESERVED</div>
+</footer>
+
+<script>
+function togFaq(el){
+  document.querySelectorAll('.faq.open').forEach(f=>{if(f!==el)f.classList.remove('open');});
+  el.classList.toggle('open');
+}
+// ── Mobile stat ticker — seamless infinite carousel ──────
+(function(){
+  const ticker = document.getElementById('statTicker');
+  const track  = document.getElementById('statTrack');
+  const dots   = document.querySelectorAll('#statDots .stat-dot');
+  if(!ticker || !track) return;
+
+  const origSlides = Array.from(track.children);
+  const total = origSlides.length; // 5
+
+  // Append clones: [0,1,2,3,4, 0',1',2',3',4']
+  origSlides.forEach(s => track.appendChild(s.cloneNode(true)));
+
+  let idx    = 0;
+  let locked = false;
+
+  function setup() {
+    const w = ticker.offsetWidth;
+    Array.from(track.children).forEach(s => {
+      s.style.width    = w + 'px';
+      s.style.minWidth = w + 'px';
+    });
+    track.style.width      = (total * 2 * w) + 'px';
+    track.style.transition = 'none';
+    track.style.transform  = 'translateX(0)';
+    idx    = 0;
+    locked = false;
+    dots.forEach((d,i) => d.classList.toggle('on', i === 0));
+  }
+
+  function advance() {
+    if(locked) return;
+    const w = ticker.offsetWidth;
+    idx++;
+
+    track.style.transition = 'transform .55s cubic-bezier(.4,0,.2,1)';
+    track.style.transform  = 'translateX(-' + (idx * w) + 'px)';
+    dots.forEach((d,i) => d.classList.toggle('on', i === idx % total));
+
+    // After the last real slide we've slid into the clone set —
+    // wait for transition to finish, then silently jump back to index 0
+    if(idx === total) {
+      locked = true;
+      track.addEventListener('transitionend', function onEnd(){
+        track.removeEventListener('transitionend', onEnd);
+        track.style.transition = 'none';
+        idx = 0;
+        track.style.transform  = 'translateX(0)';
+        dots.forEach((d,i) => d.classList.toggle('on', i === 0));
+        // Let the no-transition frame paint before unlocking
+        requestAnimationFrame(() => requestAnimationFrame(() => { locked = false; }));
+      });
+    }
+  }
+
+  setup();
+  window.addEventListener('resize', setup, {passive:true});
+  setInterval(advance, 2400);
+})();
+
+// Scroll reveal
+const obs=new IntersectionObserver(es=>{
+  es.forEach(e=>{if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)';}});
+},{threshold:0.07});
+document.querySelectorAll('.feat-card,.feat-hero,.prob-card,.step-card,.testi').forEach(el=>{
+  el.style.opacity='0';el.style.transform='translateY(16px)';
+  el.style.transition='opacity .45s ease, transform .45s ease';
+  obs.observe(el);
+});
+
+// ── Figma-style cursor on dashboard hover ──────────────
+(function(){
+  const zone   = document.getElementById('dashboard');
+  const cursor = document.getElementById('xagent-cursor');
+  if(!zone || !cursor) return;
+
+  let raf = null;
+  let mx = 0, my = 0;
+
+  // Smooth follow with RAF
+  function moveCursor() {
+    cursor.style.transform = 'translate(' + mx + 'px,' + my + 'px)';
+    raf = null;
+  }
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX;
+    my = e.clientY;
+    if(!raf) raf = requestAnimationFrame(moveCursor);
+  });
+
+  zone.addEventListener('mouseenter', () => {
+    cursor.style.opacity = '1';
+    zone.style.cursor = 'none';
+  });
+
+  zone.addEventListener('mouseleave', () => {
+    cursor.style.opacity = '0';
+    zone.style.cursor = '';
+  });
+
+  // Also hide on all child elements
+  zone.querySelectorAll('*').forEach(el => {
+    el.style.cursor = 'inherit';
+  });
+})();
+
+/* ── HERO GRID RIPPLE ── */
+(function(){
+  const wrap  = document.getElementById('hero-grid-bg');
+  const inner = document.getElementById('hero-grid-inner');
+  if (!wrap || !inner) return;
+
+  const CELL = 56;
+  let cols = 0, rows = 0, cells = [];
+
+  function build() {
+    const W = wrap.offsetWidth;
+    const H = wrap.offsetHeight;
+    cols = Math.ceil(W / CELL) + 1;
+    rows = Math.ceil(H / CELL) + 1;
+    inner.style.gridTemplateColumns = `repeat(${cols},${CELL}px)`;
+    inner.style.gridTemplateRows    = `repeat(${rows},${CELL}px)`;
+    inner.style.width  = cols * CELL + 'px';
+    inner.style.height = rows * CELL + 'px';
+    inner.innerHTML = '';
+    cells = [];
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const d = document.createElement('div');
+        d.className = 'hcell';
+        d._r = r; d._c = c;
+        inner.appendChild(d);
+        cells.push(d);
+      }
+    }
+  }
+
+  inner.addEventListener('click', e => {
+    const cell = e.target.closest('.hcell');
+    if (!cell) return;
+    const cr = cell._r, cc = cell._c;
+    cells.forEach(d => {
+      const dist = Math.hypot(d._r - cr, d._c - cc);
+      d.style.setProperty('--cdel', Math.max(0, dist * 55) + 'ms');
+      d.style.setProperty('--cdur', (200 + dist * 80) + 'ms');
+      d.classList.remove('rip');
+      void d.offsetWidth;
+      d.classList.add('rip');
+    });
+  });
+
+  let t;
+  window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(build, 120); });
+  build();
+})();
+
+/* ── GUMROAD MODAL ── */
+(function(){
+  const GR_URL = 'https://parallelconnect.gumroad.com/l/X-Autopilot';
+
+  // Inject modal HTML
+  document.body.insertAdjacentHTML('beforeend',
+    '<div id="gr-overlay" role="dialog" aria-modal="true" aria-label="Checkout">' +
+    '<div id="gr-box">' +
+    '<button id="gr-close" aria-label="Close">&times;</button>' +
+    '<iframe id="gr-frame" title="Checkout" src="" allow="payment"></iframe>' +
+    '</div></div>'
+  );
+
+  const overlay = document.getElementById('gr-overlay');
+  const frame   = document.getElementById('gr-frame');
+  const closeBtn = document.getElementById('gr-close');
+
+  function openModal(e) {
+    if (e) e.preventDefault();
+    frame.src = GR_URL;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    setTimeout(() => { frame.src = ''; }, 220);
+  }
+
+  document.querySelectorAll('[data-gr-trigger]').forEach(el => {
+    el.addEventListener('click', openModal);
+  });
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
+  closeBtn.addEventListener('click', closeModal);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+})();
+
+</script>
+</body>
+</html>

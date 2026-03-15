@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>X-Autopilot — Complete Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --border: #1e1e1e;
+  --border2: #2a2a2a;
+  --accent: #00ff88;
+  --accent-dim: rgba(0,255,136,0.08);
+  --accent-mid: rgba(0,255,136,0.25);
+  --text: #e8e8e8;
+  --text-mid: #888888;
+  --text-dim: #444444;
+  --red: #ff4444;
+  --yellow: #ffcc00;
+  --blue: #4488ff;
+  --purple: #cc88ff;
+  --orange: #ff8844;
+  --pink: #ff4488;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;line-height:1.7;min-height:100vh;}
+
+/* PROGRESS */
+#prog{position:fixed;top:0;left:0;height:1px;background:var(--accent);z-index:9999;transition:width .1s;width:0%;}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;z-index:100;display:flex;flex-direction:column;}
+.sidebar::-webkit-scrollbar{width:3px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border2);}
+
+.logo-area{padding:24px 20px 18px;border-bottom:1px solid var(--border);}
+.logo-name{font-size:14px;font-weight:800;letter-spacing:4px;color:var(--accent);}
+.logo-sub{font-size:9px;color:var(--text-dim);letter-spacing:2px;margin-top:3px;}
+
+.nav-group-label{font-size:9px;letter-spacing:2px;color:var(--text-dim);padding:14px 20px 5px;text-transform:uppercase;}
+.nav-a{display:flex;align-items:center;gap:9px;padding:8px 20px;color:var(--text-mid);text-decoration:none;font-size:11px;letter-spacing:1px;border-left:2px solid transparent;transition:all .12s;cursor:pointer;}
+.nav-a:hover,.nav-a.on{color:var(--text);border-left-color:var(--accent);background:var(--accent-dim);}
+.nav-a .ic{font-size:12px;width:16px;text-align:center;}
+.sidebar-foot{padding:14px 20px;border-top:1px solid var(--border);font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-top:auto;}
+
+/* MAIN */
+.main{margin-left:220px;}
+
+/* HERO */
+.hero{padding:70px 56px 56px;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-180px;left:-180px;width:500px;height:500px;background:radial-gradient(circle,rgba(0,255,136,.07) 0%,transparent 70%);pointer-events:none;}
+.hero-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border2);padding:4px 12px;font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:20px;}
+.hero-chip span{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hero h1{font-size:48px;font-weight:800;line-height:1.05;letter-spacing:-1px;margin-bottom:14px;}
+.hero h1 em{color:var(--accent);font-style:normal;}
+.hero-desc{font-size:13px;color:var(--text-mid);max-width:540px;margin-bottom:36px;line-height:1.8;letter-spacing:.3px;}
+.hero-stats{display:flex;gap:36px;flex-wrap:wrap;}
+.stat-box{display:flex;flex-direction:column;gap:2px;}
+.stat-n{font-size:26px;font-weight:800;color:var(--accent);}
+.stat-l{font-size:9px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;}
+
+/* SECTIONS */
+.sec{padding:52px 56px;border-bottom:1px solid var(--border);scroll-margin-top:0;}
+.sec-tag{font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:10px;text-transform:uppercase;}
+.sec-head{display:flex;align-items:center;gap:12px;margin-bottom:32px;}
+.sec-head h2{font-size:22px;font-weight:700;letter-spacing:-0.3px;}
+.sec-icon{width:36px;height:36px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;color:var(--accent);}
+
+/* CARDS */
+.grid{display:grid;gap:1px;background:var(--border);}
+.grid-2{grid-template-columns:1fr 1fr;}
+.grid-3{grid-template-columns:1fr 1fr 1fr;}
+.grid-4{grid-template-columns:1fr 1fr 1fr 1fr;}
+.card{background:var(--surface);padding:22px;transition:background .15s;}
+.card:hover{background:#161616;}
+.card-tag{font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px;}
+.card h3{font-size:12px;font-weight:700;letter-spacing:.5px;margin-bottom:8px;}
+.card p{font-size:11px;color:var(--text-mid);line-height:1.7;}
+.card-icon{font-size:22px;margin-bottom:12px;}
+.card-accent{border-top:1px solid var(--accent);}
+.card-blue{border-top:1px solid var(--blue);}
+.card-yellow{border-top:1px solid var(--yellow);}
+.card-purple{border-top:1px solid var(--purple);}
+.card-red{border-top:1px solid var(--red);}
+.card-pink{border-top:1px solid var(--pink);}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:0;}
+.step{display:flex;gap:20px;padding-bottom:28px;}
+.step:last-child{padding-bottom:0;}
+.step-l{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.step-n{width:30px;height:30px;border:1px solid var(--accent);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;}
+.step-line{width:1px;flex:1;background:linear-gradient(to bottom,var(--accent),transparent);margin-top:6px;min-height:20px;}
+.step:last-child .step-line{display:none;}
+.step-r{flex:1;padding-top:4px;}
+.step-r h3{font-size:13px;font-weight:700;margin-bottom:6px;letter-spacing:.3px;}
+.step-r p{font-size:11px;color:var(--text-mid);line-height:1.7;}
+
+/* CODE */
+.code{background:#0d0d0d;border:1px solid var(--border);padding:16px 18px;font-size:11px;line-height:1.9;overflow-x:auto;position:relative;margin-top:10px;}
+.code .cm{color:var(--text-dim);}
+.code .ky{color:var(--yellow);}
+.code .vl{color:var(--accent);}
+.code .cmd{color:var(--blue);}
+.code .str{color:var(--orange);}
+.copy{position:absolute;top:10px;right:10px;background:transparent;border:1px solid var(--border2);color:var(--text-dim);font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:3px 8px;cursor:pointer;transition:all .12s;}
+.copy:hover{border-color:var(--accent);color:var(--accent);}
+
+/* TABS */
+.tab-bar{display:flex;border-bottom:1px solid var(--border);margin-bottom:24px;}
+.tab{padding:9px 18px;font-size:10px;letter-spacing:2px;color:var(--text-dim);border-bottom:1px solid transparent;cursor:pointer;transition:all .12s;margin-bottom:-1px;}
+.tab:hover{color:var(--text-mid);}
+.tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.tc{display:none;}
+.tc.on{display:block;}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;margin-top:16px;}
+th{font-size:9px;letter-spacing:2px;color:var(--text-dim);padding:9px 14px;border-bottom:1px solid var(--border);text-align:left;font-weight:400;}
+td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-mid);vertical-align:top;}
+td:first-child{color:var(--text);font-weight:600;}
+tr:hover td{background:rgba(255,255,255,.015);}
+
+/* PILLS */
+.pill{display:inline-block;font-size:9px;letter-spacing:1px;padding:2px 8px;border:1px solid;font-weight:600;}
+.p-green{color:var(--accent);border-color:rgba(0,255,136,.3);background:rgba(0,255,136,.06);}
+.p-blue{color:var(--blue);border-color:rgba(68,136,255,.3);background:rgba(68,136,255,.06);}
+.p-yellow{color:var(--yellow);border-color:rgba(255,204,0,.3);background:rgba(255,204,0,.06);}
+.p-purple{color:var(--purple);border-color:rgba(204,136,255,.3);background:rgba(204,136,255,.06);}
+.p-red{color:var(--red);border-color:rgba(255,68,68,.3);background:rgba(255,68,68,.06);}
+.p-pink{color:var(--pink);border-color:rgba(255,68,136,.3);background:rgba(255,68,136,.06);}
+.p-orange{color:var(--orange);border-color:rgba(255,136,68,.3);background:rgba(255,136,68,.06);}
+
+/* ALERTS */
+.alert{display:flex;gap:12px;padding:14px 16px;font-size:11px;line-height:1.7;margin:14px 0;border-left:2px solid;}
+.al-green{border-color:var(--accent);background:rgba(0,255,136,.04);color:var(--text-mid);}
+.al-yellow{border-color:var(--yellow);background:rgba(255,204,0,.04);color:var(--text-mid);}
+.al-blue{border-color:var(--blue);background:rgba(68,136,255,.04);color:var(--text-mid);}
+.al-red{border-color:var(--red);background:rgba(255,68,68,.04);color:var(--text-mid);}
+.alert-ic{flex-shrink:0;margin-top:1px;}
+
+/* FAQ */
+.faq{border:1px solid var(--border);margin-bottom:6px;}
+.faq.open{border-color:var(--border2);}
+.faq-q{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.3px;user-select:none;}
+.faq-q:hover{background:rgba(255,255,255,.02);}
+.faq-ch{font-size:10px;color:var(--text-dim);transition:transform .18s;}
+.faq.open .faq-ch{transform:rotate(180deg);color:var(--accent);}
+.faq-a{display:none;padding:0 18px 14px;font-size:11px;color:var(--text-mid);line-height:1.8;border-top:1px solid var(--border);}
+.faq-a p{padding-top:12px;}
+.faq.open .faq-a{display:block;}
+
+/* TIMELINE */
+.timeline{padding-left:28px;position:relative;margin-top:14px;}
+.timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:1px;background:linear-gradient(to bottom,var(--accent),transparent);}
+.tl-item{position:relative;margin-bottom:20px;}
+.tl-item::before{content:'';position:absolute;left:-25px;top:5px;width:7px;height:7px;border:1px solid var(--accent);background:var(--bg);}
+.tl-time{font-size:9px;letter-spacing:2px;color:var(--accent);margin-bottom:3px;}
+.tl-text{font-size:11px;color:var(--text-mid);line-height:1.7;}
+.tl-text strong{color:var(--text);}
+
+/* MOCKUP */
+.mockup{border:1px solid var(--border);overflow:hidden;margin-top:20px;}
+.mock-bar{background:#0d0d0d;border-bottom:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;gap:7px;}
+.dot{width:10px;height:10px;border-radius:50%;}
+.dot-r{background:#ff5f57;}
+.dot-y{background:#ffbd2e;}
+.dot-g{background:#28c840;}
+.mock-url{flex:1;background:var(--surface);border:1px solid var(--border);padding:4px 10px;font-size:10px;color:var(--text-dim);margin:0 10px;}
+.mock-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);}
+.mock-tab{padding:9px 18px;font-size:10px;letter-spacing:2px;color:var(--text-dim);border-bottom:1px solid transparent;}
+.mock-tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+.mock-body{padding:20px;display:grid;gap:1px;background:var(--border);}
+.mock-stat{background:var(--surface);padding:16px;}
+.mock-stat-l{font-size:9px;letter-spacing:2px;color:var(--text-dim);}
+.mock-stat-v{font-size:22px;font-weight:800;color:var(--accent);margin:3px 0;}
+.mock-stat-s{font-size:9px;color:var(--text-dim);}
+
+/* ACTION BADGE */
+.act-badge{display:inline-flex;align-items:center;gap:5px;border:1px solid;padding:2px 8px;font-size:9px;letter-spacing:1px;}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--border);margin:28px 0;}
+
+/* FEATURE ROW */
+.feat-row{display:grid;grid-template-columns:180px 1fr;gap:0;border:1px solid var(--border);margin-bottom:6px;}
+.feat-key{padding:12px 16px;background:var(--surface);font-size:11px;color:var(--yellow);border-right:1px solid var(--border);}
+.feat-val{padding:12px 16px;font-size:11px;color:var(--text-mid);}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);}
+
+/* FOOTER */
+.footer{padding:36px 56px;text-align:center;border-top:1px solid var(--border);}
+
+@media(max-width:800px){
+  .sidebar{display:none;}
+  .main{margin-left:0;}
+  .hero{padding:36px 20px;}
+  .hero h1{font-size:28px;}
+  .sec{padding:36px 20px;}
+  .grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo-area">
+    <div class="logo-name">X-AUTOPILOT</div>
+    <div class="logo-sub">Complete User Guide</div>
+  </div>
+  <div style="flex:1;overflow-y:auto;">
+    <div class="nav-group-label">Getting Started</div>
+    <a class="nav-a on" href="#what"><span class="ic">◈</span> What Is X-Autopilot</a>
+    <a class="nav-a" href="#prereq"><span class="ic">✦</span> Requirements</a>
+    <a class="nav-a" href="#install"><span class="ic">↓</span> Installation</a>
+    <a class="nav-a" href="#apikeys"><span class="ic">⌘</span> API Keys</a>
+    <a class="nav-a" href="#firstrun"><span class="ic">▶</span> First Run & Login</a>
+
+    <div class="nav-group-label">Dashboard</div>
+    <a class="nav-a" href="#dash-overview"><span class="ic">◉</span> Overview Tab</a>
+    <a class="nav-a" href="#dash-activity"><span class="ic">↩</span> Activity Tab</a>
+    <a class="nav-a" href="#dash-settings"><span class="ic">⚙</span> Settings Tab</a>
+    <a class="nav-a" href="#dash-growth"><span class="ic">↑</span> Growth Tab</a>
+
+    <div class="nav-group-label">Automation</div>
+    <a class="nav-a" href="#actions"><span class="ic">♥</span> Actions Explained</a>
+    <a class="nav-a" href="#tiers"><span class="ic">+</span> Tiered Strategy</a>
+    <a class="nav-a" href="#sessions"><span class="ic">◷</span> Sessions & Schedule</a>
+    <a class="nav-a" href="#overlay"><span class="ic">□</span> Browser Overlay</a>
+    <a class="nav-a" href="#safety"><span class="ic">◼</span> Safety & Limits</a>
+
+    <div class="nav-group-label">Configuration</div>
+    <a class="nav-a" href="#voice"><span class="ic">✎</span> Voice & Persona</a>
+    <a class="nav-a" href="#targets"><span class="ic">⊕</span> Target Accounts</a>
+    <a class="nav-a" href="#config-ref"><span class="ic">≡</span> Full Config Reference</a>
+
+    <div class="nav-group-label">Help</div>
+    <a class="nav-a" href="#tips"><span class="ic">★</span> Pro Tips</a>
+    <a class="nav-a" href="#faq"><span class="ic">?</span> FAQ</a>
+    <a class="nav-a" href="#trouble"><span class="ic">⚠</span> Troubleshooting</a>
+  </div>
+  <div class="sidebar-foot">X-AUTOPILOT · v2.0</div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-chip"><span></span> AI GROWTH AGENT · RUNNING LOCALLY</div>
+  <h1>Grow on X<br/><em>while you sleep.</em></h1>
+  <p class="hero-desc">X-Autopilot is a fully local AI agent that opens a real Chrome browser, logs into your Twitter/X account, and engages with your target audience 24/7 — liking, replying, following — written entirely in your voice, powered by Claude or GPT-4.</p>
+  <div class="hero-stats">
+    <div class="stat-box"><div class="stat-n">40+</div><div class="stat-l">Replies / day</div></div>
+    <div class="stat-box"><div class="stat-n">45+</div><div class="stat-l">Likes / day</div></div>
+    <div class="stat-box"><div class="stat-n">10+</div><div class="stat-l">Follows / day</div></div>
+    <div class="stat-box"><div class="stat-n">4</div><div class="stat-l">DMs / day</div></div>
+    <div class="stat-box"><div class="stat-n">100%</div><div class="stat-l">Your voice</div></div>
+    <div class="stat-box"><div class="stat-n">0</div><div class="stat-l">Cloud servers</div></div>
+  </div>
+</section>
+
+<!-- WHAT IS IT -->
+<section class="sec" id="what">
+  <div class="sec-tag">01 — OVERVIEW</div>
+  <div class="sec-head"><div class="sec-icon">◈</div><h2>What Is X-Autopilot?</h2></div>
+  <p style="color:var(--text-mid);max-width:660px;margin-bottom:28px;font-size:12px;line-height:1.9;">X-Autopilot is a desktop AI agent — it runs entirely on your Mac or Windows computer. No monthly subscription, no cloud server, no data leaving your machine. It opens a real Google Chrome browser, navigates Twitter just like a human would, and autonomously engages with your audience throughout the day.</p>
+
+  <div class="grid grid-3" style="margin-bottom:1px;">
+    <div class="card card-accent">
+      <div class="card-icon">🧠</div>
+      <div class="card-tag">AI CORE</div>
+      <h3>Writes In Your Voice</h3>
+      <p>Powered by Claude (Anthropic) or GPT-4 (OpenAI). The AI knows your niche, personality, products, and phrases you'd never say — every reply sounds like you wrote it.</p>
+    </div>
+    <div class="card card-blue">
+      <div class="card-icon">👻</div>
+      <div class="card-tag">STEALTH</div>
+      <h3>Undetectable Automation</h3>
+      <p>Uses a real Chrome browser with GPU/CPU fingerprint spoofing, randomised typing speed, natural mouse trajectories, and human scroll physics. Twitter sees a real user.</p>
+    </div>
+    <div class="card card-yellow">
+      <div class="card-icon">🎯</div>
+      <div class="card-tag">TARGETING</div>
+      <h3>Smart Account Targeting</h3>
+      <p>Engages with your hand-picked target accounts, trending hashtags, and home feed. Automatically discovers new relevant accounts to follow and engage with.</p>
+    </div>
+  </div>
+  <div class="grid grid-3">
+    <div class="card card-purple">
+      <div class="card-icon">📊</div>
+      <div class="card-tag">DASHBOARD</div>
+      <h3>Live Web Dashboard</h3>
+      <p>Monitor everything at <strong style="color:var(--text);">localhost:5001</strong> — live action log, stats, follower growth chart, settings, and controls. Works in any browser.</p>
+    </div>
+    <div class="card card-accent">
+      <div class="card-icon">🔒</div>
+      <div class="card-tag">PRIVACY</div>
+      <h3>100% Local & Private</h3>
+      <p>Your API keys, Twitter session, and activity data never leave your machine. No accounts to create, no cloud sync, no external servers involved whatsoever.</p>
+    </div>
+    <div class="card card-blue">
+      <div class="card-icon">⚡</div>
+      <div class="card-tag">EASE OF USE</div>
+      <h3>Zero Coding Required</h3>
+      <p>Double-click to install, double-click to start. Configure everything through the visual dashboard. No terminal knowledge needed after the one-time setup.</p>
+    </div>
+  </div>
+</section>
+
+<!-- REQUIREMENTS -->
+<section class="sec" id="prereq">
+  <div class="sec-tag">02 — REQUIREMENTS</div>
+  <div class="sec-head"><div class="sec-icon">✦</div><h2>What You Need</h2></div>
+
+  <div class="grid grid-2" style="margin-bottom:20px;">
+    <div class="card card-accent">
+      <div class="card-tag">SOFTWARE</div>
+      <h3>Required Software</h3>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--text);font-size:12px;">Google Chrome</span>
+          <span class="pill p-green">REQUIRED</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--text);font-size:12px;">Python 3.9+</span>
+          <span class="pill p-green">REQUIRED</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--text);font-size:12px;">Anthropic API Key</span>
+          <span class="pill p-yellow">ONE OF THESE</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+          <span style="color:var(--text);font-size:12px;">OpenAI API Key</span>
+          <span class="pill p-yellow">ONE OF THESE</span>
+        </div>
+      </div>
+    </div>
+    <div class="card card-blue">
+      <div class="card-tag">HARDWARE / OS</div>
+      <h3>Supported Systems</h3>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--text);font-size:12px;">🍎 macOS 12+</span>
+          <span class="pill p-green">SUPPORTED</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--text);font-size:12px;">🪟 Windows 10 / 11</span>
+          <span class="pill p-green">SUPPORTED</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+          <span style="color:var(--text);font-size:12px;">RAM</span>
+          <span style="font-size:11px;color:var(--text-mid);">4GB minimum</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+          <span style="color:var(--text);font-size:12px;">Disk Space</span>
+          <span style="font-size:11px;color:var(--text-mid);">~800MB (venv)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert al-blue">
+    <div class="alert-ic">ℹ</div>
+    <div>Node.js is <strong>not required</strong>. The dashboard is pre-built and served by Python. You only need Python + Chrome to run X-Autopilot.</div>
+  </div>
+</section>
+
+<!-- INSTALL -->
+<section class="sec" id="install">
+  <div class="sec-tag">03 — INSTALLATION</div>
+  <div class="sec-head"><div class="sec-icon">↓</div><h2>Installation</h2></div>
+
+  <div class="tab-bar">
+    <div class="tab on" onclick="swTab(this,'mac')">🍎 MACOS</div>
+    <div class="tab" onclick="swTab(this,'win')">🪟 WINDOWS</div>
+  </div>
+
+  <div class="tc on" id="tc-mac">
+    <div class="steps">
+      <div class="step">
+        <div class="step-l"><div class="step-n">1</div><div class="step-line"></div></div>
+        <div class="step-r">
+          <h3>Verify Python is installed</h3>
+          <p>Press <strong>⌘ Space</strong>, type <em>Terminal</em>, press Enter. Then run:</p>
+          <div class="code"><button class="copy" onclick="cp(this)">COPY</button><span class="cmd">python3 --version</span></div>
+          <p style="margin-top:8px;">You should see <code style="color:var(--accent);">Python 3.x.x</code>. If not, download from <strong style="color:var(--blue);">python.org/downloads</strong> — install the latest 3.x release.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-l"><div class="step-n">2</div><div class="step-line"></div></div>
+        <div class="step-r">
+          <h3>Unzip X-Autopilot</h3>
+          <p>Double-click <strong>x-autopilot.zip</strong> to extract it. Move the folder somewhere permanent — your Desktop or Documents folder works well. Don't run it from inside the ZIP.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-l"><div class="step-n">3</div><div class="step-line"></div></div>
+        <div class="step-r">
+          <h3>Run Setup (one time only)</h3>
+          <p>Inside the folder, find <strong>setup.command</strong> and double-click it.</p>
+          <div class="alert al-yellow" style="margin-top:10px;">
+            <div class="alert-ic">⚠</div>
+            <div><strong>First time on Mac:</strong> macOS may block it. Right-click → Open → click <em>Open</em> in the popup. After this once, it runs normally on double-click.</div>
+          </div>
+          <p style="margin-top:10px;">A terminal window opens and automatically installs all dependencies. This takes 2–4 minutes. When it says <code style="color:var(--accent);">Setup complete</code>, close the terminal.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-l"><div class="step-n">4</div><div class="step-line"></div></div>
+        <div class="step-r">
+          <h3>Start the agent</h3>
+          <p>Double-click <strong>start.command</strong>. This starts everything — the dashboard opens at <code style="color:var(--accent);">localhost:5001</code> and Chrome launches.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-l"><div class="step-n">5</div></div>
+        <div class="step-r">
+          <h3>Add your credentials</h3>
+          <p>Go to <strong>localhost:5001 → Settings → Account & API Keys</strong> and enter your Twitter username and Anthropic/OpenAI key. Hit Save. Done.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tc" id="tc-win">
+    <div class="steps">
+      <div class="step">
+        <div class="step-l"><div class="step-n">1</div><div class="step-line"></div></div>
+        <div class="step-r">
+          <h3>Install Python</h3>
+          <p>Go to <strong style="color:var(--blue);">python.org/downloads</strong> and download the latest Python 3.x installer. Run it and <strong>check the box "Add Python to PATH"</strong> — this is critical or nothing will work.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-l"><div class="step-n">2</div><div class="step-line"></div></div>
+        <div class="step-r">
+          <h3>Extract the ZIP</h3>
+          <p>Right-click <strong>x-autopilot.zip</strong> → <em>Extract All</em>. Put the folder on your Desktop or Documents. Don't run from inside a ZIP.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-l"><div class="step-n">3</div><div class="step-line"></div></div>
+        <div class="step-r">
+          <h3>Run setup.bat</h3>
+          <p>Double-click <strong>setup.bat</strong>. A black console window installs everything automatically.</p>
+          <div class="alert al-yellow" style="margin-top:10px;">
+            <div class="alert-ic">⚠</div>
+            <div>Windows Defender may show a warning. Click <strong>More info → Run anyway</strong>. The script is safe — it only installs Python packages.</div>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-l"><div class="step-n">4</div><div class="step-line"></div></div>
+        <div class="step-r">
+          <h3>Start with start.bat</h3>
+          <p>Double-click <strong>start.bat</strong> every time you want to run X-Autopilot. Your browser will open the dashboard automatically.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-l"><div class="step-n">5</div></div>
+        <div class="step-r">
+          <h3>Add credentials via dashboard</h3>
+          <p>Open <strong>localhost:5001 → Settings → Account & API Keys</strong> in your browser and enter your details.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- API KEYS -->
+<section class="sec" id="apikeys">
+  <div class="sec-tag">04 — CREDENTIALS</div>
+  <div class="sec-head"><div class="sec-icon">⌘</div><h2>API Keys Setup</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:600px;margin-bottom:28px;line-height:1.9;">X-Autopilot needs an AI API key to generate replies, analyse tweets, and write in your voice. You need at least one. Both can be added as a fallback.</p>
+
+  <div class="grid grid-2" style="margin-bottom:20px;">
+    <div class="card card-accent">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+        <div>
+          <div class="card-tag">ANTHROPIC · RECOMMENDED</div>
+          <h3 style="margin-top:4px;">Claude API</h3>
+        </div>
+        <span class="pill p-green">BEST QUALITY</span>
+      </div>
+      <p>Claude writes the most natural, contextual replies. Best at matching personality and avoiding robotic phrasing. Strongly recommended over OpenAI for this use case.</p>
+      <div style="margin-top:16px;border:1px solid var(--border);padding:14px;">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px;">HOW TO GET YOUR KEY</div>
+        <div style="font-size:11px;color:var(--text-mid);line-height:2;">
+          1 · Go to <strong style="color:var(--blue);">console.anthropic.com</strong><br/>
+          2 · Sign up or log in<br/>
+          3 · Click <strong style="color:var(--text);">API Keys → Create Key</strong><br/>
+          4 · Copy the key — starts with <code style="color:var(--accent);">sk-ant-</code>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--text-dim);">Cost: ~$3–8 / month at 40 replies/day · Free trial credits available</div>
+    </div>
+    <div class="card card-blue">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;">
+        <div>
+          <div class="card-tag">OPENAI · OPTIONAL</div>
+          <h3 style="margin-top:4px;">GPT-4 API</h3>
+        </div>
+        <span class="pill p-blue">FALLBACK</span>
+      </div>
+      <p>X-Autopilot can use GPT-4o or GPT-4o-mini as a fallback when Claude is unavailable, or as your primary provider if you prefer OpenAI.</p>
+      <div style="margin-top:16px;border:1px solid var(--border);padding:14px;">
+        <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:10px;">HOW TO GET YOUR KEY</div>
+        <div style="font-size:11px;color:var(--text-mid);line-height:2;">
+          1 · Go to <strong style="color:var(--blue);">platform.openai.com</strong><br/>
+          2 · Sign up or log in<br/>
+          3 · Click <strong style="color:var(--text);">API Keys → Create new secret key</strong><br/>
+          4 · Copy the key — starts with <code style="color:var(--blue);">sk-proj-</code>
+        </div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--text-dim);">Cost: ~$1–5 / month using gpt-4o-mini · Pay-as-you-go</div>
+    </div>
+  </div>
+
+  <div class="alert al-green">
+    <div class="alert-ic">✓</div>
+    <div>Enter your keys in the dashboard at <strong style="color:var(--text);">Settings → Account & API Keys</strong> and click Save. Keys are stored locally in your <code>.env</code> file and never transmitted anywhere.</div>
+  </div>
+
+  <div style="margin-top:24px;">
+    <div style="font-size:10px;letter-spacing:2px;color:var(--text-dim);margin-bottom:12px;">DASHBOARD · SETTINGS TAB</div>
+    <div class="mockup">
+      <div class="mock-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <div class="mock-url">localhost:5001</div>
+      </div>
+      <div class="mock-tabs">
+        <div class="mock-tab">OVERVIEW</div><div class="mock-tab">ACTIVITY</div>
+        <div class="mock-tab on">SETTINGS</div><div class="mock-tab">GROWTH</div>
+      </div>
+      <div style="padding:20px;background:var(--surface);">
+        <div style="font-size:9px;letter-spacing:3px;color:var(--text-dim);margin-bottom:14px;">ACCOUNT & API KEYS</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <div style="border:1px solid var(--border);padding:11px 14px;">
+            <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px;margin-bottom:4px;">TWITTER USERNAME</div>
+            <div style="font-size:12px;color:var(--text-mid);">your_handle_here</div>
+          </div>
+          <div style="border:1px solid var(--accent);padding:11px 14px;background:rgba(0,255,136,.03);">
+            <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px;margin-bottom:4px;">ANTHROPIC API KEY</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <div style="font-size:12px;color:var(--text-mid);">sk-ant-••••••••••••••••••••</div>
+              <span class="pill p-green">SAVED</span>
+            </div>
+          </div>
+          <div style="border:1px solid var(--border);padding:11px 14px;">
+            <div style="font-size:9px;color:var(--text-dim);letter-spacing:2px;margin-bottom:4px;">OPENAI API KEY (FALLBACK)</div>
+            <div style="font-size:12px;color:var(--text-mid);">leave blank if not using OpenAI</div>
+          </div>
+        </div>
+        <div style="margin-top:14px;background:var(--accent);color:var(--bg);padding:9px 18px;display:inline-block;font-size:10px;letter-spacing:2px;font-weight:700;cursor:default;">SAVE CREDENTIALS</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FIRST RUN -->
+<section class="sec" id="firstrun">
+  <div class="sec-tag">05 — FIRST RUN</div>
+  <div class="sec-head"><div class="sec-icon">▶</div><h2>First Run & Login</h2></div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-l"><div class="step-n">1</div><div class="step-line"></div></div>
+      <div class="step-r">
+        <h3>Launch the agent</h3>
+        <p>Double-click <strong>start.command</strong> (Mac) or <strong>start.bat</strong> (Windows). Two things happen simultaneously: a Chrome window opens, and the dashboard appears at <code style="color:var(--accent);">localhost:5001</code>.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-l"><div class="step-n">2</div><div class="step-line"></div></div>
+      <div class="step-r">
+        <h3>Log into Twitter in the Chrome window</h3>
+        <p>Chrome opens Twitter's login page. Sign in with your account username and password — exactly as you normally would. Complete any 2FA or phone verification Twitter asks for.</p>
+        <div class="alert al-yellow" style="margin-top:10px;">
+          <div class="alert-ic">⚠</div>
+          <div>This login is one-time only. X-Autopilot saves your session so future launches don't require logging in again — unless Twitter expires your session (usually after 30+ days of inactivity).</div>
+        </div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-l"><div class="step-n">3</div><div class="step-line"></div></div>
+      <div class="step-r">
+        <h3>Confirm in the terminal</h3>
+        <p>Once you're on your Twitter home feed, switch back to the terminal window and press <strong>ENTER</strong>. The agent confirms the session and begins operating.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-l"><div class="step-n">4</div><div class="step-line"></div></div>
+      <div class="step-r">
+        <h3>Watch it go</h3>
+        <p>A floating status bar appears in the Chrome window showing what the agent is doing in real-time. The dashboard at localhost:5001 shows live stats and action logs.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-l"><div class="step-n">5</div></div>
+      <div class="step-r">
+        <h3>Keep Chrome open</h3>
+        <p>Leave the Chrome window open while X-Autopilot runs. You can minimise it — but don't close it. The dashboard at localhost:5001 is separate and can be closed/opened freely.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DASHBOARD OVERVIEW -->
+<section class="sec" id="dash-overview">
+  <div class="sec-tag">06 — DASHBOARD</div>
+  <div class="sec-head"><div class="sec-icon">◉</div><h2>Dashboard · Overview Tab</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:600px;margin-bottom:24px;">Open <strong style="color:var(--accent);">http://localhost:5001</strong> in any browser. The Overview tab is your mission control.</p>
+
+  <div class="mockup" style="margin-bottom:24px;">
+    <div class="mock-bar">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="mock-url">localhost:5001 — X-Autopilot Dashboard</div>
+    </div>
+    <div class="mock-tabs">
+      <div class="mock-tab on">OVERVIEW</div><div class="mock-tab">ACTIVITY</div>
+      <div class="mock-tab">SETTINGS</div><div class="mock-tab">GROWTH</div>
+    </div>
+    <div class="mock-body grid-3">
+      <div class="mock-stat"><div class="mock-stat-l">REPLIES TODAY</div><div class="mock-stat-v">23</div><div class="mock-stat-s">↑ 40 target</div></div>
+      <div class="mock-stat"><div class="mock-stat-l">LIKES TODAY</div><div class="mock-stat-v" style="color:var(--pink);">31</div><div class="mock-stat-s">↑ 45 target</div></div>
+      <div class="mock-stat"><div class="mock-stat-l">NEW FOLLOWERS</div><div class="mock-stat-v" style="color:var(--blue);">+7</div><div class="mock-stat-s">since yesterday</div></div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>WIDGET</th><th>WHAT IT SHOWS</th></tr></thead>
+    <tbody>
+      <tr><td>Replies Today</td><td>Number of replies posted so far vs. your daily target</td></tr>
+      <tr><td>Likes Today</td><td>Likes given today — counts toward daily limit to avoid rate limiting</td></tr>
+      <tr><td>Follows Today</td><td>New accounts followed. Kept low (10/day) to avoid Twitter penalties</td></tr>
+      <tr><td>DMs Sent</td><td>Direct messages sent. Only 4/day to avoid spam flags</td></tr>
+      <tr><td>New Followers</td><td>Net new followers gained vs. yesterday's count</td></tr>
+      <tr><td>Agent Status</td><td>What the agent is doing right now — liking, replying, sleeping, etc.</td></tr>
+      <tr><td>Pause Button</td><td>Pauses the agent after its current action. Click again to resume.</td></tr>
+      <tr><td>Quit Button</td><td>Cleanly stops the agent. All progress is saved.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- DASHBOARD ACTIVITY -->
+<section class="sec" id="dash-activity">
+  <div class="sec-tag">06b — DASHBOARD</div>
+  <div class="sec-head"><div class="sec-icon">↩</div><h2>Dashboard · Activity Tab</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:600px;margin-bottom:20px;">Every single action the agent takes is logged here with timestamp, action type, target tweet/user, and whether it succeeded.</p>
+
+  <div style="border:1px solid var(--border);margin-bottom:20px;">
+    <div style="padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;">
+      <span style="font-size:9px;letter-spacing:2px;color:var(--text-dim);">RECENT ACTIVITY</span>
+    </div>
+    <div style="display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);">
+        <span style="font-size:9px;color:var(--text-dim);width:60px;flex-shrink:0;">11:42 PM</span>
+        <span class="act-badge p-blue" style="border-color:rgba(68,136,255,.3);">↩ REPLY</span>
+        <span style="font-size:11px;color:var(--text-mid);flex:1;">Replied to @levelsio — "The distribution insight here is underrated…"</span>
+        <span class="pill p-green">OK</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);">
+        <span style="font-size:9px;color:var(--text-dim);width:60px;flex-shrink:0;">11:39 PM</span>
+        <span class="act-badge p-pink" style="border-color:rgba(255,68,136,.3);">♥ LIKE</span>
+        <span style="font-size:11px;color:var(--text-mid);flex:1;">Liked tweet by @marc_louvion about pricing pages</span>
+        <span class="pill p-green">OK</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);">
+        <span style="font-size:9px;color:var(--text-dim);width:60px;flex-shrink:0;">11:35 PM</span>
+        <span class="act-badge p-purple" style="border-color:rgba(204,136,255,.3);">+ FOLLOW</span>
+        <span style="font-size:11px;color:var(--text-mid);flex:1;">Followed @indie_builder_xyz · 840 followers</span>
+        <span class="pill p-green">OK</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:12px;padding:10px 14px;">
+        <span style="font-size:9px;color:var(--text-dim);width:60px;flex-shrink:0;">11:31 PM</span>
+        <span class="act-badge p-orange" style="border-color:rgba(255,136,68,.3);">◉ DM</span>
+        <span style="font-size:11px;color:var(--text-mid);flex:1;">DM sent to @small_saas_founder after 3 interactions</span>
+        <span class="pill p-green">OK</span>
+      </div>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>ACTION TYPE</th><th>ICON</th><th>COLOUR</th><th>WHAT IT MEANS</th></tr></thead>
+    <tbody>
+      <tr><td>REPLY</td><td>↩</td><td><span style="color:var(--blue);">Blue</span></td><td>AI-written reply posted to a tweet</td></tr>
+      <tr><td>LIKE</td><td>♥</td><td><span style="color:var(--pink);">Pink</span></td><td>Tweet liked</td></tr>
+      <tr><td>FOLLOW</td><td>+</td><td><span style="color:var(--purple);">Purple</span></td><td>Account followed</td></tr>
+      <tr><td>UNFOLLOW</td><td>−</td><td><span style="color:var(--text-mid);">Grey</span></td><td>Account unfollowed (non-followers after 14 days)</td></tr>
+      <tr><td>DM</td><td>◉</td><td><span style="color:var(--orange);">Orange</span></td><td>Direct message sent</td></tr>
+      <tr><td>TWEET</td><td>✦</td><td><span style="color:var(--accent);">Green</span></td><td>Original tweet posted (after your approval)</td></tr>
+      <tr><td>QUEUED</td><td>◈</td><td><span style="color:var(--yellow);">Yellow</span></td><td>AI-generated tweet waiting for your approval in the dashboard</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- DASHBOARD SETTINGS -->
+<section class="sec" id="dash-settings">
+  <div class="sec-tag">06c — DASHBOARD</div>
+  <div class="sec-head"><div class="sec-icon">⚙</div><h2>Dashboard · Settings Tab</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:600px;margin-bottom:20px;">The Settings tab lets you change everything without touching config.yaml. Changes save instantly and take effect on the next agent action.</p>
+
+  <table>
+    <thead><tr><th>SECTION</th><th>SETTINGS AVAILABLE</th></tr></thead>
+    <tbody>
+      <tr><td>Account & API Keys</td><td>Twitter username, Anthropic API key, OpenAI API key (fallback)</td></tr>
+      <tr><td>Voice & Persona</td><td>Niche, personality, products, product URLs, never-say phrases</td></tr>
+      <tr><td>Daily Targets</td><td>Replies, likes, follows, DMs, retweets per day</td></tr>
+      <tr><td>Posting Schedule</td><td>Active hours start/end, tweet times</td></tr>
+      <tr><td>Target Accounts</td><td>Add/remove Twitter accounts to engage with</td></tr>
+      <tr><td>Discovery</td><td>Hashtags, home feed scanning, max tweets scanned</td></tr>
+      <tr><td>Safety</td><td>Max actions per hour, pause between sessions, rate limit behaviour</td></tr>
+      <tr><td>Autonomy</td><td>Autonomy level (0–100%), require tweet approval toggle</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- DASHBOARD GROWTH -->
+<section class="sec" id="dash-growth">
+  <div class="sec-tag">06d — DASHBOARD</div>
+  <div class="sec-head"><div class="sec-icon">↑</div><h2>Dashboard · Growth Tab</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:600px;margin-bottom:20px;">The Growth tab shows your follower count over time as a chart. Data is recorded at the end of each active day.</p>
+
+  <div class="alert al-blue">
+    <div class="alert-ic">ℹ</div>
+    <div>Growth data appears after the first full day of running. Before that, the chart shows sample data so you can preview the layout. Each data point represents one day's end follower count, so you can track your trajectory week by week.</div>
+  </div>
+
+  <div style="margin-top:20px;border:1px solid var(--border);padding:24px;">
+    <div style="font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-bottom:16px;">FOLLOWER GROWTH — SAMPLE PREVIEW</div>
+    <div style="display:flex;align-items:flex-end;gap:8px;height:80px;">
+      <div style="flex:1;background:rgba(0,255,136,.15);border-top:1px solid var(--accent);position:relative;" title="Day 1: 412"><div style="position:absolute;bottom:-18px;font-size:9px;color:var(--text-dim);left:50%;transform:translateX(-50%);">D1</div></div>
+      <div style="flex:1;background:rgba(0,255,136,.15);border-top:1px solid var(--accent);height:40%;" title="Day 2: 418"></div>
+      <div style="flex:1;background:rgba(0,255,136,.15);border-top:1px solid var(--accent);height:55%;"></div>
+      <div style="flex:1;background:rgba(0,255,136,.15);border-top:1px solid var(--accent);height:62%;"></div>
+      <div style="flex:1;background:rgba(0,255,136,.15);border-top:1px solid var(--accent);height:70%;"></div>
+      <div style="flex:1;background:rgba(0,255,136,.15);border-top:1px solid var(--accent);height:75%;"></div>
+      <div style="flex:1;background:rgba(0,255,136,.15);border-top:1px solid var(--accent);height:85%;"></div>
+      <div style="flex:1;background:rgba(0,255,136,.2);border-top:2px solid var(--accent);height:100%;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ACTIONS -->
+<section class="sec" id="actions">
+  <div class="sec-tag">07 — AUTOMATION</div>
+  <div class="sec-head"><div class="sec-icon">♥</div><h2>Actions Explained</h2></div>
+
+  <table>
+    <thead><tr><th>ACTION</th><th>HOW IT WORKS</th><th>DAILY LIMIT</th><th>TRIGGER</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="act-badge p-blue" style="border-color:rgba(68,136,255,.3);">↩ REPLY</span></td>
+        <td>AI reads the tweet, generates a reply in your voice, opens the reply box and types it with human-like speed and occasional typos that get corrected.</td>
+        <td><span class="pill p-blue">40 / day</span></td>
+        <td>Target accounts, hashtag feed, home feed</td>
+      </tr>
+      <tr>
+        <td><span class="act-badge p-pink" style="border-color:rgba(255,68,136,.3);">♥ LIKE</span></td>
+        <td>Clicks the like button on relevant tweets from your targets and home feed. Helps with visibility and signals engagement before following.</td>
+        <td><span class="pill p-pink">45 / day</span></td>
+        <td>Target profiles, home feed, hashtag results</td>
+      </tr>
+      <tr>
+        <td><span class="act-badge p-purple" style="border-color:rgba(204,136,255,.3);">+ FOLLOW</span></td>
+        <td>Follows accounts that match your niche and have engaged with relevant content. Focuses on smaller accounts most likely to follow back.</td>
+        <td><span class="pill p-purple">10 / day</span></td>
+        <td>Post engagement, hashtag discovery, mentions</td>
+      </tr>
+      <tr>
+        <td><span class="act-badge p-orange" style="border-color:rgba(255,136,68,.3);">◉ DM</span></td>
+        <td>Sends personalised DMs to small accounts after several interactions. AI writes a context-aware opening message — not a generic pitch.</td>
+        <td><span class="pill p-orange">4 / day</span></td>
+        <td>After 2+ likes/replies to same account</td>
+      </tr>
+      <tr>
+        <td><span class="act-badge p-yellow" style="border-color:rgba(255,204,0,.3);">◈ TWEET</span></td>
+        <td>AI generates original tweet drafts aligned with your content strategy. By default, these appear in the dashboard for your approval before posting.</td>
+        <td><span class="pill p-yellow">4 / day</span></td>
+        <td>Scheduled tweet times in config.yaml</td>
+      </tr>
+      <tr>
+        <td><span class="act-badge p-red" style="border-color:rgba(255,68,68,.3);">− UNFOLLOW</span></td>
+        <td>Automatically unfollows accounts that didn't follow back after 14 days, keeping your following/follower ratio healthy.</td>
+        <td><span class="pill p-red">Auto</span></td>
+        <td>14 days after follow, if not followed back</td>
+      </tr>
+      <tr>
+        <td><span class="act-badge p-green" style="border-color:rgba(0,255,136,.3);">🔔 NOTIFS</span></td>
+        <td>Checks notifications, reads the full conversation thread (scrolling up to see original post + your reply + their response), then decides how to reply again.</td>
+        <td><span class="pill p-green">3 / session</span></td>
+        <td>Notification tab — replies, mentions, DMs</td>
+      </tr>
+      <tr>
+        <td><span class="act-badge" style="border-color:var(--border2);color:var(--text-mid);">↻ RETWEET</span></td>
+        <td>Retweets highly relevant content when the AI's relevance score is above threshold. Kept very low to maintain authenticity.</td>
+        <td><span class="pill" style="color:var(--text-mid);border-color:var(--border2);">2 / day</span></td>
+        <td>High-scoring relevant tweets only</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- TIERS -->
+<section class="sec" id="tiers">
+  <div class="sec-tag">08 — STRATEGY</div>
+  <div class="sec-head"><div class="sec-icon">+</div><h2>Tiered Engagement Strategy</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:640px;margin-bottom:24px;">X-Autopilot treats accounts differently based on their follower count. This maximises follow-backs from small creators while gaining visibility from large ones.</p>
+
+  <div class="grid grid-3">
+    <div class="card card-accent">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span class="pill p-green">SMALL · 0–1K</span>
+      </div>
+      <h3>Relationship Mode</h3>
+      <p style="margin-bottom:12px;">Your future loyal fans. Highest follow-back rate.</p>
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:10px;color:var(--text-mid);">→ Warm, conversational replies</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ Asks one genuine question</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ DM follow-up enabled</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ Likes older posts from profile</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ Welcome DM on new follows</div>
+      </div>
+    </div>
+    <div class="card card-blue">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span class="pill p-blue">PEER · 1K–10K</span>
+      </div>
+      <h3>Networking Mode</h3>
+      <p style="margin-bottom:12px;">Your collaborators and cross-promoters.</p>
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:10px;color:var(--text-mid);">→ Opinionated, adds depth</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ Treats them as an equal</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ DM follow-up enabled</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ Builds mutual respect tone</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ Engages across multiple posts</div>
+      </div>
+    </div>
+    <div class="card card-yellow">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span class="pill p-yellow">BIG · 10K+</span>
+      </div>
+      <h3>Visibility Mode</h3>
+      <p style="margin-bottom:12px;">Exposure to their large audiences.</p>
+      <div style="border-top:1px solid var(--border);padding-top:12px;display:flex;flex-direction:column;gap:6px;">
+        <div style="font-size:10px;color:var(--text-mid);">→ Sharp, specific, insightful</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ Replies within 15 min of post</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ No DMs (verified accounts)</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ Aims for top-of-thread position</div>
+        <div style="font-size:10px;color:var(--text-mid);">→ Contrarian or additive takes</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SESSIONS -->
+<section class="sec" id="sessions">
+  <div class="sec-tag">09 — SCHEDULE</div>
+  <div class="sec-head"><div class="sec-icon">◷</div><h2>Sessions & Daily Schedule</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:640px;margin-bottom:24px;">X-Autopilot runs in intelligent sessions with natural breaks — not continuously. This looks human and stays under Twitter's rate limits.</p>
+
+  <div class="timeline">
+    <div class="tl-item"><div class="tl-time">09:00 AM — WAKE UP</div><div class="tl-text"><strong>Agent activates.</strong> Checks notifications from overnight. Replies to any mentions. Scans home feed for first-of-morning engagement opportunities.</div></div>
+    <div class="tl-item"><div class="tl-time">09:30 AM — MORNING SESSION</div><div class="tl-text"><strong>First full engagement session.</strong> Visits target account profiles, likes 6–10 recent posts, posts 4–7 replies. Follows 2–3 new accounts discovered from targets' followers.</div></div>
+    <div class="tl-item"><div class="tl-time">10:30–12:00 PM — NATURAL BREAK</div><div class="tl-text"><strong>Light activity.</strong> Occasional idle scrolling of home feed to maintain session warmth. No heavy engagement. Random 8-minute scroll intervals.</div></div>
+    <div class="tl-item"><div class="tl-time">12:00 PM — MIDDAY SESSION</div><div class="tl-text"><strong>Hashtag scan + DMs.</strong> Searches configured hashtags for high-engagement posts to reply to. Sends DMs to warmed-up small accounts. Processes any new notifications.</div></div>
+    <div class="tl-item"><div class="tl-time">2:00–5:00 PM — AFTERNOON BREAK</div><div class="tl-text"><strong>Profile like session.</strong> Visits 2 target profiles and likes 3–6 older posts from each — a subtle signal that gets noticed by creators who check their analytics.</div></div>
+    <div class="tl-item"><div class="tl-time">6:00 PM — EVENING SESSION</div><div class="tl-text"><strong>Prime time.</strong> Biggest accounts post most in the evening. The agent watches target feeds closely and replies to fresh posts fast — within 15 minutes for big accounts to maximise visibility.</div></div>
+    <div class="tl-item"><div class="tl-time">8:00–10:00 PM — LATE SESSION</div><div class="tl-text"><strong>Follow-up engagement.</strong> Checks notification replies to the agent's own earlier comments. Reads full thread context before replying again. Processes any new followers with a welcome interaction.</div></div>
+    <div class="tl-item"><div class="tl-time">11:00 PM — SLEEP</div><div class="tl-text"><strong>Agent rests.</strong> All daily counters reset at midnight. No activity until 9am the following morning.</div></div>
+  </div>
+
+  <div class="alert al-green" style="margin-top:24px;">
+    <div class="alert-ic">⚡</div>
+    <div><strong>Skip Break:</strong> When the agent is resting between sessions, a yellow <strong>⏩ Skip</strong> button appears in the browser status bar. Click it to jump immediately to the next session without waiting.</div>
+  </div>
+</section>
+
+<!-- OVERLAY -->
+<section class="sec" id="overlay">
+  <div class="sec-tag">10 — BROWSER OVERLAY</div>
+  <div class="sec-head"><div class="sec-icon">□</div><h2>Browser Status Overlay</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:600px;margin-bottom:20px;">A floating status bar appears at the top of the Chrome window while X-Autopilot runs. It shows the current status and gives you quick controls without opening the dashboard.</p>
+
+  <div style="border:1px solid var(--border);overflow:hidden;margin-bottom:20px;">
+    <div style="background:#1a1a2e;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:9px;color:var(--text-dim);letter-spacing:2px;">X-AUTOPILOT</span>
+        <span style="font-size:10px;color:var(--accent);">● Replying to @levelsio…</span>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button style="background:rgba(255,204,0,.15);border:1px solid rgba(255,204,0,.4);color:var(--yellow);font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:3px 10px;cursor:default;">⏩ SKIP</button>
+        <button style="background:rgba(68,136,255,.15);border:1px solid rgba(68,136,255,.4);color:var(--blue);font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:3px 10px;cursor:default;">⏸ PAUSE</button>
+        <button style="background:rgba(255,68,68,.15);border:1px solid rgba(255,68,68,.4);color:var(--red);font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:3px 10px;cursor:default;">✕ QUIT</button>
+      </div>
+    </div>
+    <div style="background:#0d0d1a;padding:20px;font-size:11px;color:var(--text-dim);text-align:center;">[Twitter/X page content appears here]</div>
+  </div>
+
+  <table>
+    <thead><tr><th>BUTTON</th><th>WHEN VISIBLE</th><th>WHAT IT DOES</th></tr></thead>
+    <tbody>
+      <tr><td><span style="color:var(--yellow);">⏩ SKIP</span></td><td>During breaks and sleep periods</td><td>Immediately ends the current rest period and starts the next engagement session</td></tr>
+      <tr><td><span style="color:var(--blue);">⏸ PAUSE</span></td><td>Always visible during active session</td><td>Pauses after the current action completes. Click again (▶ RESUME) to continue.</td></tr>
+      <tr><td><span style="color:var(--red);">✕ QUIT</span></td><td>Always visible</td><td>Sends a clean shutdown signal. Agent finishes its current action, saves all data, then stops.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- SAFETY -->
+<section class="sec" id="safety">
+  <div class="sec-tag">11 — SAFETY</div>
+  <div class="sec-head"><div class="sec-icon">◼</div><h2>Safety & Rate Limits</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:640px;margin-bottom:20px;">X-Autopilot has multiple layers of safety built in to protect your account. These run automatically — you don't need to do anything.</p>
+
+  <div class="grid grid-2" style="margin-bottom:20px;">
+    <div class="card">
+      <div class="card-tag">DAILY CAPS</div>
+      <h3>Hard Daily Limits</h3>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px;">
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text);">Replies</span><span style="color:var(--text-mid);">max 40 / day</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text);">Likes</span><span style="color:var(--text-mid);">max 45 / day</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text);">Follows</span><span style="color:var(--text-mid);">max 10 / day</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;"><span style="color:var(--text);">DMs</span><span style="color:var(--text-mid);">max 4 / day</span></div>
+        <div style="display:flex;justify-content:space-between;padding:6px 0;font-size:11px;"><span style="color:var(--text);">Actions / hour</span><span style="color:var(--text-mid);">max 12 / hour</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-tag">HUMAN SIMULATION</div>
+      <h3>Anti-Detection Layers</h3>
+      <div style="margin-top:12px;display:flex;flex-direction:column;gap:7px;">
+        <div style="font-size:11px;color:var(--text-mid);">→ Real Chrome with GPU/CPU spoofing</div>
+        <div style="font-size:11px;color:var(--text-mid);">→ Randomised typing speed (25–90ms/char)</div>
+        <div style="font-size:11px;color:var(--text-mid);">→ Natural mouse trajectories with drift</div>
+        <div style="font-size:11px;color:var(--text-mid);">→ Hover dwell before every click</div>
+        <div style="font-size:11px;color:var(--text-mid);">→ Occasional typos that get corrected</div>
+        <div style="font-size:11px;color:var(--text-mid);">→ Trackpad-style scroll physics</div>
+        <div style="font-size:11px;color:var(--text-mid);">→ 15–90s randomised delay between actions</div>
+        <div style="font-size:11px;color:var(--text-mid);">→ Natural breaks and idle scrolling</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert al-yellow">
+    <div class="alert-ic">⚠</div>
+    <div><strong>Rate limit detected:</strong> If Twitter responds with a rate limit signal, X-Autopilot automatically pauses for 90 minutes and then resumes. This is handled entirely without your input.</div>
+  </div>
+</section>
+
+<!-- VOICE -->
+<section class="sec" id="voice">
+  <div class="sec-tag">12 — CONFIGURATION</div>
+  <div class="sec-head"><div class="sec-icon">✎</div><h2>Voice & Persona Setup</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:640px;margin-bottom:20px;">This is the most important configuration. The more specific you are, the more your replies will sound like you and not a generic AI.</p>
+
+  <div class="code" style="margin-bottom:20px;">
+<button class="copy" onclick="cp(this)">COPY</button>
+voice:
+  <span class="cm"># Your niche — be specific, comma-separated</span>
+  <span class="ky">niche</span>: <span class="vl">indie hacker, design, solopreneurship, SaaS</span>
+
+  <span class="cm"># 3-4 adjectives that describe your writing style</span>
+  <span class="ky">personality</span>: <span class="vl">thoughtful, analytical, dry humor</span>
+
+  <span class="cm"># Your product(s) — used for subtle contextual mentions</span>
+  <span class="ky">product</span>: <span class="vl">YourProduct, YourOtherProduct</span>
+  <span class="ky">product_url</span>: <span class="vl">https://yourproduct.com</span>
+
+  <span class="cm"># Phrases the AI will NEVER use — kills the "AI voice"</span>
+  <span class="ky">never_say</span>:
+    - <span class="vl">consistency is key</span>
+    - <span class="vl">the grind never stops</span>
+    - <span class="vl">let's goooo</span>
+    - <span class="vl">hustle hard</span>
+    - <span class="vl">crush it</span>
+    - <span class="vl">game changer</span>
+    - <span class="vl">absolutely</span>
+    - <span class="vl">certainly</span></div>
+
+  <div class="alert al-green">
+    <div class="alert-ic">★</div>
+    <div>The <code>never_say</code> list is your secret weapon. Add any phrase that sounds corporate, generic, or unlike you. The more you add, the more authentic the output becomes.</div>
+  </div>
+</section>
+
+<!-- TARGETS -->
+<section class="sec" id="targets">
+  <div class="sec-tag">13 — TARGETING</div>
+  <div class="sec-head"><div class="sec-icon">⊕</div><h2>Target Accounts</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:640px;margin-bottom:20px;">These are the Twitter accounts X-Autopilot monitors and engages with. Add 15–30 accounts in your exact niche. Mix follower sizes.</p>
+
+  <div class="code" style="margin-bottom:20px;">
+<button class="copy" onclick="cp(this)">COPY</button>
+<span class="cm"># Add Twitter handles WITHOUT the @ symbol</span>
+target_accounts:
+  - <span class="vl">levelsio</span>
+  - <span class="vl">marc_louvion</span>
+  - <span class="vl">arvidkahl</span>
+  - <span class="vl">yourfavouritecreator</span>
+  - <span class="vl">anotherrelevantaccount</span>
+
+targets:
+  <span class="ky">auto_add_enabled</span>: <span class="vl">true</span>         <span class="cm"># Auto-discover new targets</span>
+  <span class="ky">auto_add_max_per_day</span>: <span class="vl">6</span>        <span class="cm"># Max new targets auto-added daily</span>
+  <span class="ky">follow_from_mentions_enabled</span>: <span class="vl">true</span>
+  <span class="ky">follow_from_home_enabled</span>: <span class="vl">true</span></div>
+
+  <div class="alert al-blue">
+    <div class="alert-ic">ℹ</div>
+    <div>X-Autopilot also auto-discovers targets by scanning who your existing targets engage with and who appears in relevant hashtags. New accounts are added to <code>targets.json</code> automatically up to your daily limit.</div>
+  </div>
+</section>
+
+<!-- CONFIG REF -->
+<section class="sec" id="config-ref">
+  <div class="sec-tag">14 — FULL REFERENCE</div>
+  <div class="sec-head"><div class="sec-icon">≡</div><h2>Full Config Reference</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:640px;margin-bottom:20px;">Every setting in <strong>config.yaml</strong> — explained. You can edit this file directly or use the Settings tab in the dashboard.</p>
+
+  <div class="tab-bar">
+    <div class="tab on" onclick="swTab(this,'cfg-post')">POSTING</div>
+    <div class="tab" onclick="swTab(this,'cfg-eng')">ENGAGEMENT</div>
+    <div class="tab" onclick="swTab(this,'cfg-disc')">DISCOVERY</div>
+    <div class="tab" onclick="swTab(this,'cfg-safe')">SAFETY</div>
+    <div class="tab" onclick="swTab(this,'cfg-notif')">NOTIFICATIONS</div>
+  </div>
+
+  <div class="tc on" id="tc-cfg-post">
+    <table>
+      <thead><tr><th>KEY</th><th>DEFAULT</th><th>DESCRIPTION</th></tr></thead>
+      <tbody>
+        <tr><td>tweets_per_day</td><td>4</td><td>How many original tweets the AI generates per day</td></tr>
+        <tr><td>require_approval</td><td>true</td><td>If true, tweets queue in dashboard for your review. Set false for full auto-posting.</td></tr>
+        <tr><td>tweet_times</td><td>09:30, 19:00</td><td>Times the agent attempts to post original tweets</td></tr>
+        <tr><td>active_hours_start</td><td>09:00</td><td>Agent wakes up at this time each day</td></tr>
+        <tr><td>active_hours_end</td><td>23:00</td><td>Agent sleeps at this time each day</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tc" id="tc-cfg-eng">
+    <table>
+      <thead><tr><th>KEY</th><th>DEFAULT</th><th>DESCRIPTION</th></tr></thead>
+      <tbody>
+        <tr><td>daily_replies</td><td>40</td><td>Maximum replies per day across all sessions</td></tr>
+        <tr><td>daily_likes</td><td>45</td><td>Maximum likes per day</td></tr>
+        <tr><td>daily_follows</td><td>10</td><td>Maximum new follows per day</td></tr>
+        <tr><td>daily_dms</td><td>4</td><td>Maximum DMs per day — keep low to avoid spam flags</td></tr>
+        <tr><td>daily_retweets</td><td>2</td><td>Maximum retweets per day</td></tr>
+        <tr><td>min_delay_seconds</td><td>15</td><td>Minimum wait between actions (seconds)</td></tr>
+        <tr><td>max_delay_seconds</td><td>90</td><td>Maximum wait between actions (seconds)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tc" id="tc-cfg-disc">
+    <table>
+      <thead><tr><th>KEY</th><th>DEFAULT</th><th>DESCRIPTION</th></tr></thead>
+      <tbody>
+        <tr><td>hashtags</td><td>buildinpublic…</td><td>Hashtags to scan for relevant tweets to reply to</td></tr>
+        <tr><td>reply_from_hashtags</td><td>true</td><td>Whether to find and reply to tweets via hashtag search</td></tr>
+        <tr><td>reply_from_home_feed</td><td>true</td><td>Whether to reply to tweets from your home feed</td></tr>
+        <tr><td>max_hashtag_replies_per_session</td><td>5</td><td>Max replies from hashtag results in one session</td></tr>
+        <tr><td>max_home_replies_per_session</td><td>8</td><td>Max replies from home feed in one session</td></tr>
+        <tr><td>max_hashtag_tweets_scanned</td><td>60</td><td>How many hashtag tweets to scan before picking the best ones</td></tr>
+        <tr><td>candidate_score_threshold</td><td>0.15</td><td>Minimum relevance score for a tweet to qualify for reply</td></tr>
+        <tr><td>use_embeddings</td><td>true</td><td>Use vector embeddings for semantic tweet relevance scoring</td></tr>
+        <tr><td>min_likes</td><td>0</td><td>Minimum likes a tweet must have to be engaged with</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tc" id="tc-cfg-safe">
+    <table>
+      <thead><tr><th>KEY</th><th>DEFAULT</th><th>DESCRIPTION</th></tr></thead>
+      <tbody>
+        <tr><td>max_actions_per_hour</td><td>12</td><td>Hard cap on total actions in any 60-minute window</td></tr>
+        <tr><td>pause_between_sessions_minutes</td><td>60</td><td>Rest time between engagement sessions</td></tr>
+        <tr><td>unfollow_non_followers_after_days</td><td>14</td><td>Days before unfollowing accounts that haven't followed back</td></tr>
+        <tr><td>idle_scroll_enabled</td><td>true</td><td>Scroll home feed during breaks to look human</td></tr>
+        <tr><td>idle_scroll_interval_minutes</td><td>8</td><td>How often to do an idle scroll during breaks</td></tr>
+        <tr><td>stop_on_rate_limit</td><td>true</td><td>Pause if Twitter signals rate limiting</td></tr>
+        <tr><td>rate_limit_cooldown_minutes</td><td>90</td><td>How long to wait after a rate limit is detected</td></tr>
+        <tr><td>dynamic_pacing</td><td>true</td><td>Automatically slow down if approaching daily limits early</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tc" id="tc-cfg-notif">
+    <table>
+      <thead><tr><th>KEY</th><th>DEFAULT</th><th>DESCRIPTION</th></tr></thead>
+      <tbody>
+        <tr><td>reply_to_mentions</td><td>true</td><td>Automatically reply to tweets that mention you</td></tr>
+        <tr><td>max_reply_notifications_per_session</td><td>3</td><td>Max notification replies processed per session</td></tr>
+        <tr><td>follow_welcome_enabled</td><td>true</td><td>Send a welcome interaction when someone follows you</td></tr>
+        <tr><td>max_follow_welcomes_per_session</td><td>4</td><td>Max welcome interactions per session</td></tr>
+        <tr><td>follow_welcome_like_min_posts</td><td>3</td><td>Min posts to like on a new follower's profile</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- TIPS -->
+<section class="sec" id="tips">
+  <div class="sec-tag">15 — PRO TIPS</div>
+  <div class="sec-head"><div class="sec-icon">★</div><h2>Pro Tips for Maximum Growth</h2></div>
+
+  <div class="grid grid-2" style="margin-bottom:1px;">
+    <div class="card card-accent">
+      <div class="card-tag">TARGETING</div>
+      <h3>Target the Sweet Spot</h3>
+      <p>Add 20+ accounts in your exact niche. The best targets are creators with 500–5,000 followers who post regularly. They check their notifications obsessively and are most likely to engage back.</p>
+    </div>
+    <div class="card card-blue">
+      <div class="card-tag">VOICE</div>
+      <h3>Be Brutally Specific on Voice</h3>
+      <p>Add at least 10 phrases to <code>never_say</code>. Include any word that sounds corporate or AI-generated. "Absolutely", "Certainly", "Great point" — all banned. The more you restrict, the better the output.</p>
+    </div>
+  </div>
+  <div class="grid grid-2" style="margin-bottom:1px;">
+    <div class="card card-yellow">
+      <div class="card-tag">CONSISTENCY</div>
+      <h3>Run It Every Day</h3>
+      <p>Growth on X is compound. 30 days of 40 replies/day = 1,200 touch points. Those compound into follows, profile visits, and brand awareness. Running 3 days then stopping resets momentum.</p>
+    </div>
+    <div class="card card-purple">
+      <div class="card-tag">TIMING</div>
+      <h3>Prioritise Evening Active Hours</h3>
+      <p>Set active hours to include 6pm–11pm local time. Your target accounts post in evenings. First replies on a fresh post from a big account get the most eyeballs — the agent watches for new posts.</p>
+    </div>
+  </div>
+  <div class="grid grid-2">
+    <div class="card card-pink">
+      <div class="card-tag">CONTENT</div>
+      <h3>Review Queued Tweets</h3>
+      <p>With <code>require_approval: true</code>, the AI generates tweet drafts that appear in your dashboard. Review and edit these before approving — treat the AI as a first-draft writer. Your edits train your own eye for what works.</p>
+    </div>
+    <div class="card card-accent">
+      <div class="card-tag">ANALYTICS</div>
+      <h3>Track the Activity Log</h3>
+      <p>The Activity tab shows everything the agent is doing. After a week, look for patterns — which reply styles get follow-backs? Which accounts respond? Use this to refine your targets and voice settings.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec" id="faq">
+  <div class="sec-tag">16 — FAQ</div>
+  <div class="sec-head"><div class="sec-icon">?</div><h2>Frequently Asked Questions</h2></div>
+
+  <div class="faq" onclick="togFaq(this)">
+    <div class="faq-q">Will Twitter ban my account? <span class="faq-ch">▼</span></div>
+    <div class="faq-a"><p>X-Autopilot is designed to be undetectable at every layer. It uses a real Chrome browser with authentic GPU and CPU fingerprinting, randomised human typing speed (25–90ms per key), natural mouse curves with drift, hover dwell before clicks, trackpad-style scroll physics, and 15–90 second randomised delays between actions. Daily limits (40 replies, 45 likes, 10 follows) stay well within safe thresholds. No tool is 100% guaranteed, but X-Autopilot uses every known detection-avoidance technique. Use it at the recommended limits and you're in the safest possible zone.</p></div>
+  </div>
+  <div class="faq" onclick="togFaq(this)">
+    <div class="faq-q">Does my computer need to stay on the whole time? <span class="faq-ch">▼</span></div>
+    <div class="faq-a"><p>Yes. X-Autopilot runs locally on your machine, so your computer and Chrome window need to stay open. You can minimise Chrome and lock your screen — the agent keeps running. If you close the terminal or Chrome, it stops. If you need 24/7 running without keeping your laptop on, you could run it on a cheap Windows VPS (like Hetzner or Contabo), but that's optional.</p></div>
+  </div>
+  <div class="faq" onclick="togFaq(this)">
+    <div class="faq-q">How much does the API cost per month? <span class="faq-ch">▼</span></div>
+    <div class="faq-a"><p>Very little. At 40 replies/day × 30 days = 1,200 AI calls/month. At Claude's current pricing (claude-3-5-sonnet), that's roughly $3–8/month depending on reply length. Using GPT-4o-mini is even cheaper at $1–3/month. Both providers give free trial credits when you sign up. You can also reduce <code>daily_replies</code> to lower costs — even 15/day builds significant growth over a month.</p></div>
+  </div>
+  <div class="faq" onclick="togFaq(this)">
+    <div class="faq-q">Can I use my personal Twitter/X account? <span class="faq-ch">▼</span></div>
+    <div class="faq-a"><p>Yes, and it's the recommended approach. X-Autopilot is designed for building a personal brand — your expertise, your niche, your products. It logs into your account via Chrome exactly as you would. One installation supports one account.</p></div>
+  </div>
+  <div class="faq" onclick="togFaq(this)">
+    <div class="faq-q">Will the AI replies sound real or robotic? <span class="faq-ch">▼</span></div>
+    <div class="faq-a"><p>The whole system is designed around authenticity. The AI receives your niche, personality, writing style, forbidden phrases, product context, proof points, and the full text of the tweet it's replying to. Claude in particular is exceptional at avoiding "AI voice" — it produces specific, contextual, opinionated replies rather than generic affirmations. After setup, read the Activity log to see what it's posting. If anything sounds off, tighten your <code>never_say</code> list and <code>personality</code> description in config.yaml.</p></div>
+  </div>
+  <div class="faq" onclick="togFaq(this)">
+    <div class="faq-q">How do I stop it mid-session? <span class="faq-ch">▼</span></div>
+    <div class="faq-a"><p>Three ways: (1) Click the red <strong>✕ QUIT</strong> button in the browser overlay. (2) Click <strong>Quit</strong> in the dashboard Overview tab. (3) Close the terminal window. The first two are cleanest — the agent finishes its current action then stops, saving all progress. Closing the terminal is abrupt but safe. All data is preserved either way.</p></div>
+  </div>
+  <div class="faq" onclick="togFaq(this)">
+    <div class="faq-q">Does it post original tweets or just engage? <span class="faq-ch">▼</span></div>
+    <div class="faq-a"><p>Both. By default (<code>require_approval: true</code>), the AI generates original tweet drafts that appear in the dashboard for your review and approval before posting. Replies to other tweets happen automatically without approval. You can set <code>require_approval: false</code> in config.yaml to let it post original tweets fully autonomously.</p></div>
+  </div>
+  <div class="faq" onclick="togFaq(this)">
+    <div class="faq-q">I accidentally closed Chrome — what do I do? <span class="faq-ch">▼</span></div>
+    <div class="faq-a"><p>Just relaunch: double-click <strong>start.command</strong> (Mac) or <strong>start.bat</strong> (Windows). Your Twitter session is saved in the Chrome profile, so you won't need to log in again unless the session expired. All activity history in the database is preserved.</p></div>
+  </div>
+  <div class="faq" onclick="togFaq(this)">
+    <div class="faq-q">Can I run this on a VPS or cloud server? <span class="faq-ch">▼</span></div>
+    <div class="faq-a"><p>Technically yes — on a Windows VPS with Chrome installed and RDP access. It requires a visual desktop environment since Chrome runs as a visible window. Linux headless mode is not currently supported. A cheap Hetzner or Contabo Windows VPS (~$5–10/month) works well if you want 24/7 running without keeping your laptop on.</p></div>
+  </div>
+  <div class="faq" onclick="togFaq(this)">
+    <div class="faq-q">How long until I see follower growth? <span class="faq-ch">▼</span></div>
+    <div class="faq-a"><p>Typically 2–4 weeks of consistent running. Growth is non-linear — the first week looks slow because you're building awareness. By week 3, the compounding effect kicks in as people start recognising your name from repeated quality comments. Accounts with a tight niche and specific voice tend to see faster results than broad accounts.</p></div>
+  </div>
+</section>
+
+<!-- TROUBLESHOOTING -->
+<section class="sec" id="trouble">
+  <div class="sec-tag">17 — TROUBLESHOOTING</div>
+  <div class="sec-head"><div class="sec-icon">⚠</div><h2>Troubleshooting</h2></div>
+
+  <table>
+    <thead><tr><th>PROBLEM</th><th>LIKELY CAUSE</th><th>FIX</th></tr></thead>
+    <tbody>
+      <tr><td>Dashboard won't open at localhost:5001</td><td>Server not started or port conflict</td><td>Restart the agent. If port 5001 is in use, close other apps using it. Check terminal for error output.</td></tr>
+      <tr><td>"Python not found" on Mac</td><td>Python not installed</td><td>Download from python.org, install, re-run setup.command</td></tr>
+      <tr><td>setup.command won't open on Mac</td><td>Gatekeeper blocking unsigned script</td><td>Right-click → Open → click Open. Only required once.</td></tr>
+      <tr><td>setup.bat blocked by Windows Defender</td><td>SmartScreen warning</td><td>Click More info → Run anyway. The script only installs Python packages.</td></tr>
+      <tr><td>Browser closes immediately on launch</td><td>Twitter session expired</td><td>Restart — the browser will open the login page. Log in and press ENTER in the terminal.</td></tr>
+      <tr><td>Agent shows "outside active hours" and does nothing</td><td>Current time outside configured hours</td><td>Normal behaviour. Adjust active_hours_start/end in config.yaml or Settings tab.</td></tr>
+      <tr><td>Replies sound generic or robotic</td><td>Voice config too vague</td><td>Add more entries to never_say. Make personality more specific. Add proof_bank examples.</td></tr>
+      <tr><td>API key error in activity log</td><td>Wrong or missing key</td><td>Go to Settings → Account & API Keys, re-enter your key, click Save.</td></tr>
+      <tr><td>Skip Break button not responding</td><td>Overlay not yet loaded</td><td>Wait 5 seconds and try again. The overlay refreshes every status update.</td></tr>
+      <tr><td>Rate limit warning appears</td><td>Twitter throttling</td><td>Automatic — agent pauses 90 minutes then resumes. Reduce daily limits if recurring.</td></tr>
+      <tr><td>No actions after 30 minutes</td><td>Daily limits already reached</td><td>Check Overview tab — if counts hit limits, agent rests until midnight reset. Increase limits in config.yaml.</td></tr>
+      <tr><td>Chrome says "session expired, log in again"</td><td>Twitter invalidated session</td><td>Normal after ~30 days. Just log in again when prompted — session saves fresh.</td></tr>
+      <tr><td>"Module not found" error in terminal</td><td>Dependencies not installed</td><td>Run setup.command/setup.bat again. It's safe to run multiple times.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="alert al-blue" style="margin-top:20px;">
+    <div class="alert-ic">ℹ</div>
+    <div>Still stuck? Open the file <code style="color:var(--accent);">data/agent.log</code> inside the X-Autopilot folder. It has a detailed timestamped record of everything the agent did and any errors encountered.</div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div style="font-size:16px;font-weight:800;letter-spacing:4px;color:var(--accent);margin-bottom:6px;">X-AUTOPILOT</div>
+  <div style="font-size:10px;color:var(--text-dim);letter-spacing:2px;">GROW ON X WHILE YOU SLEEP · 100% LOCAL · POWERED BY CLAUDE & GPT-4</div>
+</div>
+
+</main>
+
+<script>
+// Progress bar
+window.addEventListener('scroll',()=>{
+  const p=window.scrollY/(document.body.scrollHeight-window.innerHeight)*100;
+  document.getElementById('prog').style.width=p+'%';
+});
+
+// Sidebar active tracking
+const secs=[...document.querySelectorAll('.sec[id]')];
+const links=[...document.querySelectorAll('.nav-a[href]')];
+const io=new IntersectionObserver(es=>{
+  es.forEach(e=>{
+    if(e.isIntersecting){
+      const id=e.target.id;
+      links.forEach(l=>{l.classList.toggle('on',l.getAttribute('href')==='#'+id);});
+    }
+  });
+},{rootMargin:'-15% 0px -75% 0px'});
+secs.forEach(s=>io.observe(s));
+
+function setActive(el){
+  links.forEach(l=>l.classList.remove('on'));
+  el.classList.add('on');
+}
+
+// Tab switcher
+function swTab(el,id){
+  const bar=el.closest('.tab-bar');
+  bar.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  const parent=bar.parentElement;
+  parent.querySelectorAll('.tc').forEach(t=>t.classList.remove('on'));
+  const target=document.getElementById('tc-'+id);
+  if(target)target.classList.add('on');
+}
+
+// FAQ toggle
+function togFaq(el){el.classList.toggle('open');}
+
+// Copy code
+function cp(btn){
+  const block=btn.closest('.code');
+  const clone=block.cloneNode(true);
+  clone.querySelector('.copy')?.remove();
+  const text=clone.innerText.trim();
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent='COPIED';
+    setTimeout(()=>btn.textContent='COPY',1500);
+  });
+}
+</script>
+</body>
+</html>
