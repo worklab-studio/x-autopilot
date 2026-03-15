@@ -109,13 +109,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(10,10,10,0.9
   100%{background-color:rgba(0,255,136,0);   opacity:.4;}
 }
 .hcell.rip{animation:hcell-ripple var(--cdur,300ms) ease-out var(--cdel,0ms) both;}
-@keyframes live-float-up{
-  0%  {transform:translateY(0);              opacity:0;}
-  6%  {opacity:1;}
-  78% {opacity:0.65;}
-  100%{transform:translateY(var(--travel));  opacity:0;}
-}
-.hero-badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border2);padding:5px 14px;font-size:9px;letter-spacing:2.5px;color:var(--text-dim);margin-bottom:28px;position:relative;z-index:1;}
+/* live feed component */
+#lf-wrap{position:absolute;left:0;right:0;margin:0 auto;top:90px;width:300px;height:196px;overflow:hidden;z-index:1;pointer-events:none;
+  mask-image:linear-gradient(to bottom,transparent 0%,black 22%,black 78%,transparent 100%);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 22%,black 78%,transparent 100%);}
+#lf-inner{will-change:transform;}
+.lf-row{height:28px;display:flex;align-items:center;gap:8px;padding:0 6px 0 10px;border-left:1px solid rgba(0,255,136,0.10);}
+.lf-icon{width:14px;font-size:11px;flex-shrink:0;text-align:center;}
+.lf-act{font-family:var(--mono);font-size:8px;letter-spacing:1.6px;color:rgba(255,255,255,0.22);flex-shrink:0;width:64px;}
+.lf-hdl{font-family:var(--mono);font-size:8px;letter-spacing:1px;color:rgba(255,255,255,0.40);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border2);padding:5px 14px;font-size:9px;letter-spacing:2.5px;color:var(--text-dim);margin-bottom:28px;position:relative;z-index:2;background:var(--bg);}
 .hero-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:pulse 2s ease infinite;}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,136,.4)}50%{opacity:.5;box-shadow:0 0 0 4px rgba(0,255,136,0)}}
 .hero h1{font-size:clamp(38px,6.5vw,76px);font-weight:800;line-height:1.03;letter-spacing:-2.5px;margin-bottom:20px;position:relative;z-index:1;}
@@ -1587,81 +1590,79 @@ document.querySelectorAll('.feat-card,.feat-hero,.prob-card,.step-card,.testi').
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 })();
 
-/* ── LIVE ACTIVITY STREAM ── */
+/* ── LIVE ACTIVITY FEED ── */
 (function(){
-  const ACTIONS = [
-    '♥  LIKED','↩  REPLIED','＋ FOLLOWED','◉  DM SENT',
-    '✦  TWEETED','◈  QUEUED','⊙  BROWSING','✓  APPROVED',
-    '♥  LIKED','↩  REPLIED','＋ FOLLOWED','↩  REPLIED',
-  ];
-  const HANDLES = [
-    '@naval','@levelsio','@noahkagan','@sama','@paulg',
-    '@dhh','@pjrvs','@alexhormozi','@gregisenberg',
-    '@andrewchen','@thepatwalls','@dvassallo','@thedankoe',
-    '@wizofecom','@patrickoshag','@stephsmithio',
+  const ROWS = [
+    { icon:'♥', act:'LIKED',    hdl:'@naval',         c:'#ff4488' },
+    { icon:'↩', act:'REPLIED',  hdl:'@levelsio',      c:'#00ff88' },
+    { icon:'+', act:'FOLLOWED', hdl:'@noahkagan',     c:'#4488ff' },
+    { icon:'◉', act:'DM SENT',  hdl:'@sama',          c:'#cc88ff' },
+    { icon:'✦', act:'TWEETED',  hdl:'@paulg',         c:'#00ff88' },
+    { icon:'⊙', act:'BROWSING', hdl:'@alexhormozi',   c:'#888899' },
+    { icon:'◈', act:'QUEUED',   hdl:'@gregisenberg',  c:'#ffcc00' },
+    { icon:'✓', act:'APPROVED', hdl:'@dvassallo',     c:'#00ff88' },
+    { icon:'♥', act:'LIKED',    hdl:'@thepatwalls',   c:'#ff4488' },
+    { icon:'↩', act:'REPLIED',  hdl:'@thedankoe',     c:'#00ff88' },
+    { icon:'+', act:'FOLLOWED', hdl:'@andrewchen',    c:'#4488ff' },
+    { icon:'◉', act:'DM SENT',  hdl:'@wizofecom',     c:'#cc88ff' },
+    { icon:'✦', act:'TWEETED',  hdl:'@dhh',           c:'#00ff88' },
+    { icon:'⊙', act:'BROWSING', hdl:'@pjrvs',         c:'#888899' },
+    { icon:'◈', act:'QUEUED',   hdl:'@stephsmithio',  c:'#ffcc00' },
+    { icon:'✓', act:'APPROVED', hdl:'@patrickoshag',  c:'#00ff88' },
   ];
 
-  const bg = document.createElement('div');
-  bg.id = 'live-stream-bg';
-  bg.style.cssText = 'position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;opacity:0;transition:opacity 1.2s ease;';
-  document.body.appendChild(bg);
+  const ITEM_H  = 28;
+  const VISIBLE = 7;
+  const SPEED   = 0.32; /* px per rAF ≈19 px/s */
 
-  /* only visible while hero is in viewport */
   const hero = document.querySelector('.hero');
-  if (hero) {
-    const obs = new IntersectionObserver(([e]) => {
-      bg.style.opacity = e.isIntersecting ? '1' : '0';
-    }, { threshold: 0.05 });
-    obs.observe(hero);
+  if (!hero) return;
+
+  /* build DOM */
+  const wrap  = document.createElement('div'); wrap.id  = 'lf-wrap';
+  const inner = document.createElement('div'); inner.id = 'lf-inner';
+  wrap.appendChild(inner);
+  hero.insertBefore(wrap, hero.firstChild);
+
+  let pool = [...ROWS].sort(() => Math.random() - 0.5); /* shuffle */
+  let poolIdx = 0;
+
+  function nextRow() {
+    const r = pool[poolIdx % pool.length]; poolIdx++;
+    return r;
   }
 
-  /* stream runs in center band: 22%–78% of viewport width */
-  const COLS    = 7;
-  const X_START = 22;
-  const X_RANGE = 56;
-
-  const badge = document.querySelector('.hero-badge');
-
-  function getStartY() {
-    /* bottom edge of the badge + tiny gap */
-    return badge ? badge.getBoundingClientRect().bottom + 6 : window.innerHeight * 0.62;
+  function makeEl(r) {
+    const d = document.createElement('div');
+    d.className = 'lf-row';
+    d.innerHTML =
+      '<span class="lf-icon" style="color:' + r.c + '">' + r.icon + '</span>' +
+      '<span class="lf-act">'  + r.act  + '</span>' +
+      '<span class="lf-hdl">'  + r.hdl  + '</span>';
+    return d;
   }
 
-  function spawn() {
-    const startY  = getStartY();
-    /* travel far enough to clear above the fixed nav (56 px tall) */
-    const travel  = -(startY + 64);
+  /* seed with enough rows to fill + one hidden below */
+  for (let i = 0; i < VISIBLE + 2; i++) inner.appendChild(makeEl(nextRow()));
 
-    const action  = ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
-    const handle  = HANDLES[Math.floor(Math.random() * HANDLES.length)];
-    const col     = Math.floor(Math.random() * COLS);
-    const xPct    = X_START + (col / (COLS - 1)) * X_RANGE + (Math.random() * 4 - 2);
-    const dur     = 4 + Math.random() * 3;            /* 4–7 s — shorter distance */
-    const alpha   = (0.10 + Math.random() * 0.14).toFixed(2);
-    const size    = Math.random() > 0.75 ? '10px' : '9px';
+  let offset = 0, raf = null;
 
-    const el = document.createElement('div');
-    el.textContent = action + '  ' + handle;
-    el.style.cssText =
-      'position:absolute;' +
-      'top:' + startY + 'px;' +
-      'left:' + xPct + '%;' +
-      '--travel:' + travel + 'px;' +
-      'font-family:\'JetBrains Mono\',monospace;' +
-      'font-size:' + size + ';' +
-      'font-weight:500;' +
-      'color:rgba(0,255,136,' + alpha + ');' +
-      'white-space:nowrap;' +
-      'letter-spacing:1.8px;' +
-      'animation:live-float-up ' + dur + 's linear forwards;';
-    bg.appendChild(el);
-    el.addEventListener('animationend', () => el.remove());
+  function tick() {
+    offset += SPEED;
+    if (offset >= ITEM_H) {
+      offset -= ITEM_H;
+      inner.removeChild(inner.firstElementChild);
+      inner.appendChild(makeEl(nextRow()));
+    }
+    inner.style.transform = 'translateY(-' + offset + 'px)';
+    raf = requestAnimationFrame(tick);
   }
 
-  /* initial burst */
-  for (let i = 0; i < 10; i++) setTimeout(spawn, i * 200);
-  /* steady stream */
-  setInterval(spawn, 380);
+  /* pause when hero not visible */
+  new IntersectionObserver(([e]) => {
+    if (e.isIntersecting) { if (!raf) raf = requestAnimationFrame(tick); }
+    else { cancelAnimationFrame(raf); raf = null; }
+  }, { threshold: 0.05 }).observe(hero);
 })();
 
 </script>
