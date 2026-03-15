@@ -109,6 +109,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(10,10,10,0.9
   100%{background-color:rgba(0,255,136,0);   opacity:.4;}
 }
 .hcell.rip{animation:hcell-ripple var(--cdur,300ms) ease-out var(--cdel,0ms) both;}
+@keyframes live-float-up{
+  0%  {transform:translateY(0);     opacity:0;}
+  7%  {opacity:1;}
+  82% {opacity:0.7;}
+  100%{transform:translateY(-110vh);opacity:0;}
+}
 .hero-badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border2);padding:5px 14px;font-size:9px;letter-spacing:2.5px;color:var(--text-dim);margin-bottom:28px;position:relative;z-index:1;}
 .hero-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:pulse 2s ease infinite;}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,136,.4)}50%{opacity:.5;box-shadow:0 0 0 4px rgba(0,255,136,0)}}
@@ -1579,6 +1585,68 @@ document.querySelectorAll('.feat-card,.feat-hero,.prob-card,.step-card,.testi').
   overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
   closeBtn.addEventListener('click', closeModal);
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+})();
+
+/* ── LIVE ACTIVITY STREAM ── */
+(function(){
+  const ACTIONS = [
+    '♥  LIKED','↩  REPLIED','＋ FOLLOWED','◉  DM SENT',
+    '✦  TWEETED','◈  QUEUED','⊙  BROWSING','✓  APPROVED',
+    '♥  LIKED','↩  REPLIED','＋ FOLLOWED','↩  REPLIED',
+  ];
+  const HANDLES = [
+    '@naval','@levelsio','@noahkagan','@sama','@paulg',
+    '@dhh','@pjrvs','@alexhormozi','@gregisenberg',
+    '@andrewchen','@thepatwalls','@dvassallo','@thedankoe',
+    '@wizofecom','@patrickoshag','@stephsmithio',
+  ];
+
+  const bg = document.createElement('div');
+  bg.id = 'live-stream-bg';
+  bg.style.cssText = 'position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;opacity:0;transition:opacity 1.2s ease;';
+  document.body.appendChild(bg);
+
+  /* only visible while hero is in viewport */
+  const hero = document.querySelector('.hero');
+  if (hero) {
+    const obs = new IntersectionObserver(([e]) => {
+      bg.style.opacity = e.isIntersecting ? '1' : '0';
+    }, { threshold: 0.05 });
+    obs.observe(hero);
+  }
+
+  const COLS = 11;
+
+  function spawn() {
+    const action  = ACTIONS [Math.floor(Math.random() * ACTIONS.length)];
+    const handle  = HANDLES [Math.floor(Math.random() * HANDLES.length)];
+    const col     = Math.floor(Math.random() * COLS);
+    const xPct    = (col / COLS * 100) + (Math.random() * 5 - 2.5);
+    const dur     = 7 + Math.random() * 5;           /* 7–12 s */
+    const alpha   = (0.10 + Math.random() * 0.13).toFixed(2);  /* 0.10–0.23 */
+    const size    = Math.random() > 0.75 ? '10px' : '9px';
+
+    const el = document.createElement('div');
+    el.textContent = action + '  ' + handle;
+    el.style.cssText =
+      'position:absolute;' +
+      'bottom:-24px;' +
+      'left:' + xPct + '%;' +
+      'font-family:\'JetBrains Mono\',monospace;' +
+      'font-size:' + size + ';' +
+      'font-weight:500;' +
+      'color:rgba(0,255,136,' + alpha + ');' +
+      'white-space:nowrap;' +
+      'letter-spacing:1.8px;' +
+      'animation:live-float-up ' + dur + 's linear forwards;';
+    bg.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+
+  /* initial burst so screen isn't empty on load */
+  for (let i = 0; i < 14; i++) setTimeout(spawn, i * 180);
+  /* steady stream */
+  setInterval(spawn, 420);
 })();
 
 </script>
