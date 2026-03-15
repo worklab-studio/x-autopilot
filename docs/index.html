@@ -1615,13 +1615,16 @@ document.querySelectorAll('.feat-card,.feat-hero,.prob-card,.step-card,.testi').
     obs.observe(hero);
   }
 
-  const COLS = 11;
+  /* stream runs in center band: 22%–78% of viewport width */
+  const COLS     = 7;
+  const X_START  = 22;   /* % from left */
+  const X_RANGE  = 56;   /* % width of band */
 
   function spawn() {
     const action  = ACTIONS [Math.floor(Math.random() * ACTIONS.length)];
     const handle  = HANDLES [Math.floor(Math.random() * HANDLES.length)];
     const col     = Math.floor(Math.random() * COLS);
-    const xPct    = (col / COLS * 100) + (Math.random() * 5 - 2.5);
+    const xPct    = X_START + (col / (COLS - 1)) * X_RANGE + (Math.random() * 4 - 2);
     const dur     = 7 + Math.random() * 5;           /* 7–12 s */
     const alpha   = (0.10 + Math.random() * 0.13).toFixed(2);  /* 0.10–0.23 */
     const size    = Math.random() > 0.75 ? '10px' : '9px';
