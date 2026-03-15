@@ -1,0 +1,31 @@
+# X-Autopilot
+
+> An AI agent that grows your X (Twitter) account on autopilot — replies, likes, follows, and DMs in your exact voice, 24/7.
+
+## Product
+
+X-Autopilot is a locally-run AI agent for macOS and Windows. It connects to your X account and autonomously performs actions (replies, likes, follows, DMs) based on a trained voice profile that mimics your writing style. It uses large language models to generate on-brand responses indistinguishable from human writing.
+
+- **Price:** $99 one-time, no monthly subscription
+- **Platform:** macOS, Windows
+- **Purchase:** https://parallelconnect.gumroad.com/l/X-Autopilot
+
+## Key Features
+
+- AI-generated replies in your exact tone and voice
+- Automated likes, follows, and DMs
+- Approval queue — review actions before they go live
+- Voice Lab — train the agent on your writing style
+- Discovery mode — find and engage relevant accounts
+- Fully local — no cloud, no third-party data storage
+- Runs in background with a live dashboard
+
+## Pages
+
+- Homepage: https://x-autopilot.app/
+- Setup Guide: https://x-autopilot.app/guide
+
+## Contact
+
+- Website: https://x-autopilot.app
+- Purchase: https://parallelconnect.gumroad.com/l/X-Autopilot
