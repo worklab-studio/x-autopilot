@@ -1,4 +1,5 @@
 playwright==1.42.0
+langdetect==1.0.9
 playwright-stealth==1.0.6
 anthropic==0.20.0
 openai==1.35.7

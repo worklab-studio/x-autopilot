@@ -71,21 +71,42 @@ def is_bait(text: str, config: dict) -> bool:
     return False
 
 
+try:
+    from langdetect import detect as _ld_detect
+    _HAVE_LANGDETECT = True
+except ImportError:
+    _HAVE_LANGDETECT = False
+
+
 def is_english(text: str) -> bool:
-    if not text:
+    if not text or not text.strip():
         return False
-    if len(text) < 20:
-        return True
-    letters = [c for c in text if c.isalpha()]
+    clean = text.strip()
+    # Short text (< 20 chars): langdetect is unreliable — use ASCII ratio only
+    if len(clean) < 20:
+        letters = [c for c in clean if c.isalpha()]
+        if not letters:
+            return True   # emoji / punctuation only — don't block
+        ascii_l = [c for c in letters if ord(c) < 128]
+        return len(ascii_l) / len(letters) >= 0.85
+    # Longer text: use langdetect (accurate), fall back to tightened heuristic
+    if _HAVE_LANGDETECT:
+        try:
+            return _ld_detect(clean) == "en"
+        except Exception:
+            pass  # fall through to heuristic
+    # Fallback heuristic (tightened from original)
+    letters = [c for c in clean if c.isalpha()]
     if not letters:
         return False
-    ascii_letters = [c for c in letters if ord(c) < 128]
-    if len(ascii_letters) / len(letters) < 0.7:
+    ascii_l = [c for c in letters if ord(c) < 128]
+    if len(ascii_l) / len(letters) < 0.80:  # raised from 0.70
         return False
-    lower = f" {text.lower()} "
-    common = [" the ", " and ", " to ", " of ", " in ", " for ", " with ", " on "]
+    lower = f" {clean.lower()} "
+    common = [" the ", " and ", " to ", " of ", " in ", " for ", " with ", " on ",
+              " is ", " are ", " was ", " it ", " that ", " this ", " have "]
     hits = sum(1 for w in common if w in lower)
-    return hits >= 1
+    return hits >= 2  # raised from 1
 
 
 def is_low_engagement(tweet: dict, config: dict) -> bool:

@@ -389,20 +389,8 @@ def _is_bait(text: str, config: dict) -> bool:
 
 
 def _is_english(text: str) -> bool:
-    if not text:
-        return False
-    if len(text) < 20:
-        return True
-    letters = [c for c in text if c.isalpha()]
-    if not letters:
-        return False
-    ascii_letters = [c for c in letters if ord(c) < 128]
-    if len(ascii_letters) / len(letters) < 0.7:
-        return False
-    lower = f" {text.lower()} "
-    common = [" the ", " and ", " to ", " of ", " in ", " for ", " with ", " on "]
-    hits = sum(1 for w in common if w in lower)
-    return hits >= 1
+    from agent.quality import is_english
+    return is_english(text)
 
 
 def _load_topic_history(config: dict) -> list:
