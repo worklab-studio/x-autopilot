@@ -1,20 +1,54 @@
 #!/bin/bash
-# X Autopilot — Mac App Launcher
-# This executable lives at: ProjectDir/X Autopilot.app/Contents/MacOS/X Autopilot
-# The project folder is 3 levels up from here.
+# ─────────────────────────────────────────────────────────────
+#  X Autopilot — Mac App Launcher (Smart Start / Quit)
+#  Double-click once  →  starts the agent (Figma-style window)
+#  Double-click again →  quits agent + closes window + Terminal
+# ─────────────────────────────────────────────────────────────
 
 PROJECT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 
+# Safety check
 if [ ! -f "$PROJECT_DIR/start.sh" ]; then
     osascript -e 'display alert "X Autopilot" message "Cannot find start.sh — make sure X Autopilot.app is inside the project folder." as critical'
     exit 1
 fi
 
+# ── Detect if agent is already running (port 5001 in use) ──
+AGENT_PID=$(lsof -ti :5001 2>/dev/null | head -1)
+
+if [ -n "$AGENT_PID" ]; then
+    # Agent is running — offer to quit
+    RESULT=$(osascript -e 'button returned of (display dialog "X Autopilot is running.\n\nQuit the agent and close the dashboard?" buttons {"Cancel", "Quit"} default button "Quit" with title "X Autopilot")')
+    if [ "$RESULT" = "Quit" ]; then
+        # 1. Signal agent to stop gracefully
+        touch "$PROJECT_DIR/data/quit_flag"
+
+        # 2. Close the app-mode browser window via stored PID
+        if [ -f "$PROJECT_DIR/data/browser_pid" ]; then
+            kill $(cat "$PROJECT_DIR/data/browser_pid") 2>/dev/null
+            rm -f "$PROJECT_DIR/data/browser_pid"
+        fi
+
+        # 3. Close Terminal window titled "X Autopilot"
+        osascript -e 'tell application "Terminal" to close (every window whose custom title is "X Autopilot")'
+
+        # 4. Notify
+        osascript -e 'display notification "X Autopilot stopped." with title "X Autopilot"'
+    fi
+    exit 0
+fi
+
+# ── Agent not running — launch it ──
+osascript << 'APPLEEOF'
+tell application "Terminal"
+    activate
+end tell
+APPLEEOF
+
 osascript - "$PROJECT_DIR" << 'APPLEEOF'
 on run argv
     set projectDir to item 1 of argv
     tell application "Terminal"
-        activate
         set w to do script ("cd '" & projectDir & "' && bash start.sh")
         set custom title of front window to "X Autopilot"
     end tell

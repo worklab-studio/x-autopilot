@@ -1,11 +1,12 @@
 #!/bin/bash
 # ─────────────────────────────────────────
 #  TWITTER AGENT — SETUP SCRIPT
-#  Run this ONCE to install everything
+#  Run this ONCE to install everything.
 #  Usage: bash setup.sh
 # ─────────────────────────────────────────
 
-set -e  # Exit on any error
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 echo ""
 echo "╔══════════════════════════════════════╗"
@@ -13,65 +14,143 @@ echo "║     TWITTER AGENT — SETUP           ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
 
-# Check Python
-if ! command -v python3 &> /dev/null; then
-    echo "❌ Python 3 not found. Install from https://python.org"
+# ── 1. CHECK PYTHON ──────────────────────
+if command -v python3 &> /dev/null; then
+    PYTHON=python3
+elif command -v python &> /dev/null; then
+    PYTHON=python
+else
+    echo "❌  Python 3 not found."
+    echo ""
+    echo "    Download it from: https://python.org/downloads"
+    echo "    (click the big yellow Download button)"
+    echo ""
+    echo "    ⚠️  Windows: check 'Add Python to PATH' during install!"
+    echo ""
+    read -p "Press Enter to close..."
     exit 1
 fi
-echo "✅ Python found: $(python3 --version)"
 
-# Check pip
-if ! command -v pip3 &> /dev/null; then
-    echo "❌ pip not found. Please install pip."
+PY_VER=$($PYTHON -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+PY_MAJOR=$($PYTHON -c "import sys; print(sys.version_info.major)")
+PY_MINOR=$($PYTHON -c "import sys; print(sys.version_info.minor)")
+
+if [ "$PY_MAJOR" -lt 3 ] || { [ "$PY_MAJOR" -eq 3 ] && [ "$PY_MINOR" -lt 9 ]; }; then
+    echo "❌  Python 3.9 or newer is required. You have $PY_VER"
+    echo "    Download the latest from: https://python.org/downloads"
+    echo ""
+    read -p "Press Enter to close..."
     exit 1
 fi
-echo "✅ pip found"
+echo "✅  Python $PY_VER found"
 
-# Create virtual environment
+# ── 2. PYTHON VIRTUAL ENVIRONMENT ────────
 echo ""
-echo "📦 Creating virtual environment..."
-python3 -m venv venv
-source venv/bin/activate
+echo "📦  Creating Python virtual environment..."
+$PYTHON -m venv venv
+if [ $? -ne 0 ]; then
+    echo "❌  Failed to create virtual environment."
+    echo "    Try running: $PYTHON -m pip install virtualenv"
+    read -p "Press Enter to close..."
+    exit 1
+fi
 
-# Install Python dependencies
-echo ""
-echo "📦 Installing Python packages..."
-pip install -r requirements.txt
+if [ -f "venv/bin/activate" ]; then
+    source venv/bin/activate
+else
+    source venv/Scripts/activate
+fi
 
-# Install Playwright browsers
+# ── 3. PYTHON PACKAGES ───────────────────
 echo ""
-echo "🌐 Installing Playwright Chrome..."
+echo "📦  Installing Python packages (1-2 minutes)..."
+pip install --upgrade pip --quiet
+pip install -r requirements.txt --quiet
+if [ $? -ne 0 ]; then
+    echo "❌  Failed to install Python packages."
+    echo "    Check your internet connection and try again."
+    read -p "Press Enter to close..."
+    exit 1
+fi
+echo "✅  Python packages installed"
+
+# ── 4. PLAYWRIGHT BROWSER ────────────────
+echo ""
+echo "🌐  Installing automation browser (1-3 minutes)..."
 playwright install chromium
-playwright install-deps chromium
+if [ $? -ne 0 ]; then
+    echo "❌  Failed to install the automation browser."
+    echo "    Check your internet connection and try again."
+    read -p "Press Enter to close..."
+    exit 1
+fi
+echo "✅  Browser installed"
 
-# Create .env file if it doesn't exist
-if [ ! -f .env ]; then
+# ── 5. DASHBOARD BUILD ────────────────────
+# If the pre-built dashboard is already included (shipped with the product),
+# skip Node.js entirely. Node.js is only needed to rebuild from source.
+if [ -f "dashboard/build/index.html" ]; then
+    echo ""
+    echo "✅  Dashboard already built — no Node.js needed"
+else
+    echo ""
+    echo "🎨  Dashboard not pre-built — building it now..."
+    echo "    (Node.js required for this step)"
+    echo ""
+
+    if ! command -v node &> /dev/null; then
+        echo "❌  Node.js not found."
+        echo ""
+        echo "    Download it from: https://nodejs.org  (click the LTS button)"
+        echo "    After installing, close this window and run setup again."
+        echo ""
+        read -p "Press Enter to close..."
+        exit 1
+    fi
+    echo "✅  Node.js $(node -v) found"
+
+    echo ""
+    echo "📦  Installing dashboard dependencies..."
+    npm --prefix dashboard install --silent
+    if [ $? -ne 0 ]; then
+        echo "❌  npm install failed. Check your internet connection."
+        read -p "Press Enter to close..."
+        exit 1
+    fi
+
+    echo ""
+    echo "🔨  Building dashboard UI (~30 seconds)..."
+    npm --prefix dashboard run build
+    if [ $? -ne 0 ]; then
+        echo "❌  Dashboard build failed."
+        read -p "Press Enter to close..."
+        exit 1
+    fi
+    echo "✅  Dashboard built"
+fi
+
+# ── 6. CREATE .env IF MISSING ─────────────
+if [ ! -f ".env" ]; then
     cp .env.example .env
     echo ""
-    echo "⚠️  Created .env file — IMPORTANT: Open it and add your LLM API key!"
-    echo "   File location: $(pwd)/.env"
+    echo "📄  Created .env config file"
 fi
 
-# Create data directory
+# ── 7. DATA DIRECTORY ─────────────────────
 mkdir -p data/chrome_profile
+
+# ── 8. FIX PERMISSIONS (Mac) ──────────────
+chmod +x setup.sh start.sh setup.command start.command "twitter agent.command" "X Autopilot.app/Contents/MacOS/X Autopilot" 2>/dev/null || true
 
 echo ""
 echo "╔══════════════════════════════════════╗"
-echo "║     SETUP COMPLETE! ✅              ║"
+echo "║        SETUP COMPLETE! ✅           ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
-echo "NEXT STEPS:"
-echo "1. Open .env and add one of these:"
-echo "   - ANTHROPIC_API_KEY (https://console.anthropic.com)"
-echo "   - OPENAI_API_KEY (https://platform.openai.com/api-keys)"
-echo "   Optional: set LLM_PROVIDER=openai or anthropic (default is auto)"
+echo "  ➜  Double-click  start.command  to launch"
+echo "     (or run: bash start.sh)"
 echo ""
-echo "2. Activate the virtual environment:"
-echo "   source venv/bin/activate"
-echo ""
-echo "3. Test your session:"
-echo "   python main.py --test"
-echo ""
-echo "4. Start the agent:"
-echo "   python main.py"
+echo "  ➜  Dashboard opens at http://localhost:5001"
+echo "     Go to SETTINGS → ACCOUNT & API KEYS"
+echo "     and paste your Anthropic or OpenAI key."
 echo ""

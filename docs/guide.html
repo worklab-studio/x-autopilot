@@ -474,7 +474,8 @@ tr:hover td{background:rgba(255,255,255,.015);}
         <div class="step-l"><div class="step-n">4</div><div class="step-line"></div></div>
         <div class="step-r">
           <h3>Start the agent</h3>
-          <p>Double-click <strong>start.command</strong>. This starts everything — the dashboard opens at <code style="color:var(--accent);">localhost:5001</code> and Chrome launches.</p>
+          <p>Double-click <strong>X Autopilot.app</strong>. The dashboard opens in its own window at <code style="color:var(--accent);">localhost:5001</code> — no browser tabs, no clutter. On Windows, double-click <strong>start.bat</strong> instead.</p>
+          <div class="callout" style="margin-top:10px;"><strong>First time on Mac:</strong> macOS may block it. Right-click <strong>X Autopilot.app</strong> → Open → click <em>Open</em> in the popup. You only need to do this once.</div>
         </div>
       </div>
       <div class="step">
@@ -631,7 +632,7 @@ tr:hover td{background:rgba(255,255,255,.015);}
       <div class="step-l"><div class="step-n">1</div><div class="step-line"></div></div>
       <div class="step-r">
         <h3>Launch the agent</h3>
-        <p>Double-click <strong>start.command</strong> (Mac) or <strong>start.bat</strong> (Windows). Two things happen simultaneously: a Chrome window opens, and the dashboard appears at <code style="color:var(--accent);">localhost:5001</code>.</p>
+        <p>Double-click <strong>X Autopilot.app</strong> (Mac) or <strong>start.bat</strong> (Windows). The dashboard opens in its own dedicated window at <code style="color:var(--accent);">localhost:5001</code> — no address bar, no browser tabs.</p>
       </div>
     </div>
     <div class="step">
@@ -662,8 +663,8 @@ tr:hover td{background:rgba(255,255,255,.015);}
     <div class="step">
       <div class="step-l"><div class="step-n">5</div></div>
       <div class="step-r">
-        <h3>Keep Chrome open</h3>
-        <p>Leave the Chrome window open while X-Autopilot runs. You can minimise it — but don't close it. The dashboard at localhost:5001 is separate and can be closed/opened freely.</p>
+        <h3>To stop the agent</h3>
+        <p>On Mac: close the dashboard window or press <strong>Cmd+Q</strong> — the agent stops automatically. You can also double-click <strong>X Autopilot.app</strong> again while it's running and click <strong>Quit</strong>. On Windows: close the terminal window or use the Quit button in the dashboard.</p>
       </div>
     </div>
   </div>
@@ -1230,15 +1231,15 @@ targets:
   </div>
   <div class="faq" onclick="togFaq(this)">
     <div class="faq-q">How do I stop it mid-session? <span class="faq-ch">▼</span></div>
-    <div class="faq-a"><p>Three ways: (1) Click the red <strong>✕ QUIT</strong> button in the browser overlay. (2) Click <strong>Quit</strong> in the dashboard Overview tab. (3) Close the terminal window. The first two are cleanest — the agent finishes its current action then stops, saving all progress. Closing the terminal is abrupt but safe. All data is preserved either way.</p></div>
+    <div class="faq-a"><p><strong>Mac:</strong> Close the dashboard window, press <strong>Cmd+Q</strong>, or double-click <strong>X Autopilot.app</strong> again and click Quit. All three stop the agent cleanly and close everything. <strong>Windows:</strong> Click the red <strong>✕ QUIT</strong> button in the dashboard, or close the terminal window. All data is saved either way.</p></div>
   </div>
   <div class="faq" onclick="togFaq(this)">
     <div class="faq-q">Does it post original tweets or just engage? <span class="faq-ch">▼</span></div>
     <div class="faq-a"><p>Both. By default (<code>require_approval: true</code>), the AI generates original tweet drafts that appear in the dashboard for your review and approval before posting. Replies to other tweets happen automatically without approval. You can set <code>require_approval: false</code> in config.yaml to let it post original tweets fully autonomously.</p></div>
   </div>
   <div class="faq" onclick="togFaq(this)">
-    <div class="faq-q">I accidentally closed Chrome — what do I do? <span class="faq-ch">▼</span></div>
-    <div class="faq-a"><p>Just relaunch: double-click <strong>start.command</strong> (Mac) or <strong>start.bat</strong> (Windows). Your Twitter session is saved in the Chrome profile, so you won't need to log in again unless the session expired. All activity history in the database is preserved.</p></div>
+    <div class="faq-q">I closed the dashboard window — what do I do? <span class="faq-ch">▼</span></div>
+    <div class="faq-a"><p>On Mac, closing the window intentionally stops the agent — just double-click <strong>X Autopilot.app</strong> to start it again. On Windows, double-click <strong>start.bat</strong>. Your Twitter session is saved in the Chrome profile so you won't need to log in again. All activity history is preserved.</p></div>
   </div>
   <div class="faq" onclick="togFaq(this)">
     <div class="faq-q">Can I run this on a VPS or cloud server? <span class="faq-ch">▼</span></div>

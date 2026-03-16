@@ -1,9 +1,11 @@
 #!/bin/bash
 # ─────────────────────────────────────────
-#  START EVERYTHING — Agent + Dashboard
-#  Run this from the project root:
-#  bash start.sh
+#  TWITTER AGENT — START SCRIPT
+#  Usage: bash start.sh
 # ─────────────────────────────────────────
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 echo ""
 echo "╔══════════════════════════════════════╗"
@@ -11,47 +13,98 @@ echo "║     TWITTER AGENT — STARTING        ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
 
-# Require a foreground TTY so logs are visible in real time.
-# Allow background launch when explicitly opted-in (used by the macOS app).
-if [ ! -t 1 ] && [ "${ALLOW_BACKGROUND:-}" != "1" ]; then
-  echo "Please run this in the foreground to see live output."
-  echo "Example: bash start.sh"
-  exit 1
+# ── CHECK SETUP ──────────────────────────
+if [ ! -d "venv" ]; then
+    echo "❌  Setup not run yet. Please run setup first:"
+    echo "    Mac:     bash setup.sh"
+    echo "    Windows: double-click setup.bat"
+    exit 1
 fi
 
-# Activate virtual environment
-source venv/bin/activate
+if [ ! -d "dashboard/build" ]; then
+    echo "❌  Dashboard not built. Please run setup first:"
+    echo "    bash setup.sh"
+    exit 1
+fi
 
-# Start Flask API in background
+# ── ACTIVATE VENV ────────────────────────
+if [ -f "venv/bin/activate" ]; then
+    source venv/bin/activate
+else
+    source venv/Scripts/activate
+fi
+
+# ── START FLASK (serves API + built UI) ──
 API_PORT="${DASHBOARD_API_PORT:-5001}"
-echo "🖥  Starting dashboard API (port ${API_PORT})..."
+echo "🖥  Starting dashboard on port ${API_PORT}..."
 DASHBOARD_API_PORT="${API_PORT}" python dashboard/server.py &
 FLASK_PID=$!
-echo "   API running (PID: $FLASK_PID)"
+echo "   Dashboard PID: $FLASK_PID"
 
-# Wait a moment for Flask to start
+# ── WAIT THEN OPEN BROWSER ───────────────
 sleep 2
+echo ""
+echo "🌐  Opening dashboard at http://localhost:${API_PORT}"
+if command -v open &> /dev/null; then
+    # macOS — try Chrome/Brave/Edge in app mode (Figma-style window, no browser chrome)
+    CHROME_PATHS=(
+        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser"
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+    )
+    BROWSER_OPENED=false
+    for CHROME_BIN in "${CHROME_PATHS[@]}"; do
+        if [ -f "$CHROME_BIN" ]; then
+            "$CHROME_BIN" --app="http://localhost:${API_PORT}" \
+                --window-size=1280,820 \
+                --window-position=100,50 2>/dev/null &
+            echo $! > "$SCRIPT_DIR/data/browser_pid"
+            BROWSER_OPENED=true
+            break
+        fi
+    done
+    # Fallback to default browser if no Chrome-based browser found
+    if [ "$BROWSER_OPENED" = false ]; then
+        open "http://localhost:${API_PORT}"
+    fi
 
-# Start React dashboard in background
-echo "🎨 Starting dashboard UI (port 3000)..."
-npm --prefix dashboard start &
-REACT_PID=$!
-echo "   UI running (PID: $REACT_PID)"
+    # ── Browser watcher — closing the window stops the agent ──
+    # Runs in background; when browser PID disappears (Cmd+Q or red X),
+    # writes quit_flag so the agent shuts down gracefully.
+    if [ "$BROWSER_OPENED" = true ]; then
+        (
+            WATCH_PID=$(cat "$SCRIPT_DIR/data/browser_pid" 2>/dev/null)
+            while [ -n "$WATCH_PID" ] && kill -0 "$WATCH_PID" 2>/dev/null; do
+                sleep 1
+            done
+            # Only trigger if agent is still running (not already quitting)
+            if [ ! -f "$SCRIPT_DIR/data/quit_flag" ]; then
+                touch "$SCRIPT_DIR/data/quit_flag"
+            fi
+        ) &
+    fi
+
+elif command -v xdg-open &> /dev/null; then
+    xdg-open "http://localhost:${API_PORT}"      # Linux
+fi
 
 echo ""
 echo "╔══════════════════════════════════════╗"
-echo "║  Dashboard: http://localhost:3000   ║"
-echo "║  API:       http://localhost:${API_PORT}   ║"
+echo "║  Dashboard: http://localhost:${API_PORT}   ║"
+echo "║  Press Ctrl+C to stop everything    ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
-echo "Starting agent in 3 seconds..."
-sleep 3
 
-# Start the main agent (foreground — Ctrl+C to stop everything)
+# ── START AGENT (foreground) ─────────────
 python main.py
 
-# Cleanup on exit
+# ── CLEANUP ON EXIT ───────────────────────
 echo ""
-echo "Stopping all processes..."
-kill $FLASK_PID $REACT_PID 2>/dev/null
-echo "✅ Everything stopped."
+echo "Stopping dashboard server..."
+kill $FLASK_PID 2>/dev/null
+# Close the app-mode browser window
+if [ -f "$SCRIPT_DIR/data/browser_pid" ]; then
+    kill $(cat "$SCRIPT_DIR/data/browser_pid") 2>/dev/null
+    rm -f "$SCRIPT_DIR/data/browser_pid"
+fi
+echo "✅  Everything stopped."
