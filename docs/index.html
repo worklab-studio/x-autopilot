@@ -116,11 +116,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(10,10,10,0.9
 }
 .hcell.rip{animation:hcell-ripple var(--cdur,300ms) ease-out var(--cdel,0ms) both;}
 /* live feed component */
-#lf-wrap{position:relative;width:300px;height:196px;overflow:hidden;z-index:1;pointer-events:none;
-  mask-image:linear-gradient(to bottom,transparent 0%,black 22%,black 78%,transparent 100%);
-  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 22%,black 78%,transparent 100%);}
+#lf-wrap{position:relative;margin-top:-100px;width:300px;height:296px;overflow:hidden;z-index:1;pointer-events:none;
+  mask-image:linear-gradient(to bottom,transparent 0%,black 54px,black calc(100% - 50px),transparent 100%);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 54px,black calc(100% - 50px),transparent 100%);}
 #lf-inner{will-change:transform;}
-.lf-row{height:28px;display:flex;align-items:center;gap:8px;padding:0 10px 0 10px;border-left:1px solid rgba(0,255,136,0.10);border-right:1px solid rgba(0,255,136,0.10);}
+.lf-row{height:28px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 10px 0 10px;border-left:1px solid rgba(0,255,136,0.10);border-right:1px solid rgba(0,255,136,0.10);}
 .lf-icon{width:14px;font-size:11px;flex-shrink:0;text-align:center;}
 .lf-act{font-family:var(--mono);font-size:8px;letter-spacing:1.6px;color:rgba(255,255,255,0.22);flex-shrink:0;width:64px;}
 .lf-hdl{font-family:var(--mono);font-size:8px;letter-spacing:1px;color:rgba(255,255,255,0.40);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -338,6 +338,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:28px
   nav{padding:0 20px;}
   .nav-links{display:none;}
   .hero{padding:88px 24px 64px;}
+  #lf-wrap{margin-top:-88px;height:284px;}
   .wrap{padding:64px 24px;}
   .final{padding-left:24px;padding-right:24px;}
   /* Hero stats: 3 columns */
@@ -497,6 +498,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:28px
   .nav-logo{font-size:11px;letter-spacing:3px;}
   .nav-cta{padding:7px 14px;font-size:9px;letter-spacing:1px;}
   .hero{padding:72px 16px 56px;}
+  #lf-wrap{margin-top:-72px;height:268px;}
   .hero h1{letter-spacing:-1.5px;}
   .hero-badge{font-size:8px;letter-spacing:1.8px;}
   .hero-sub{font-size:12px;}
