@@ -116,9 +116,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(10,10,10,0.9
 }
 .hcell.rip{animation:hcell-ripple var(--cdur,300ms) ease-out var(--cdel,0ms) both;}
 /* live feed component */
-#lf-wrap{position:relative;margin-top:-100px;width:300px;height:296px;overflow:hidden;z-index:1;pointer-events:none;
-  mask-image:linear-gradient(to bottom,transparent 0%,black 54px,black calc(100% - 50px),transparent 100%);
-  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 54px,black calc(100% - 50px),transparent 100%);}
+#lf-wrap{position:relative;margin-top:-100px;width:260px;height:296px;overflow:hidden;z-index:1;pointer-events:none;
+  mask-image:linear-gradient(to bottom,transparent 0%,black 54px,black 100%);
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 54px,black 100%);}
 #lf-inner{will-change:transform;}
 .lf-row{height:28px;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 10px 0 10px;border-left:1px solid rgba(0,255,136,0.10);border-right:1px solid rgba(0,255,136,0.10);}
 .lf-icon{width:14px;font-size:11px;flex-shrink:0;text-align:center;}
@@ -1621,7 +1621,7 @@ document.querySelectorAll('.feat-card,.feat-hero,.prob-card,.step-card,.testi').
   ];
 
   const ITEM_H  = 28;
-  const VISIBLE = 7;
+  const VISIBLE = 11;
   const SPEED   = 0.32; /* px per rAF ≈19 px/s */
 
   const hero = document.querySelector('.hero');
