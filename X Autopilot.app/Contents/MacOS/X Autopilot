@@ -1,0 +1,22 @@
+#!/bin/bash
+# X Autopilot — Mac App Launcher
+# This executable lives at: ProjectDir/X Autopilot.app/Contents/MacOS/X Autopilot
+# The project folder is 3 levels up from here.
+
+PROJECT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
+
+if [ ! -f "$PROJECT_DIR/start.sh" ]; then
+    osascript -e 'display alert "X Autopilot" message "Cannot find start.sh — make sure X Autopilot.app is inside the project folder." as critical'
+    exit 1
+fi
+
+osascript - "$PROJECT_DIR" << 'APPLEEOF'
+on run argv
+    set projectDir to item 1 of argv
+    tell application "Terminal"
+        activate
+        set w to do script ("cd '" & projectDir & "' && bash start.sh")
+        set custom title of front window to "X Autopilot"
+    end tell
+end run
+APPLEEOF
