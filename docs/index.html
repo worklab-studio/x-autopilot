@@ -99,7 +99,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(10,10,10,0.9
 .nav-cta:hover{opacity:.85;}
 
 /* ── HERO ── */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 48px 88px;text-align:center;position:relative;overflow:hidden;}
+.hero{height:100svh;min-height:560px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:100px 48px 52px;text-align:center;position:relative;overflow:hidden;}
 .hero::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:1000px;height:700px;background:radial-gradient(ellipse,rgba(0,255,136,.05) 0%,transparent 65%);pointer-events:none;}
 /* ── HERO GRID BG ── */
 #hero-grid-bg{position:absolute;inset:0;overflow:hidden;z-index:0;pointer-events:none;
@@ -116,7 +116,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(10,10,10,0.9
 }
 .hcell.rip{animation:hcell-ripple var(--cdur,300ms) ease-out var(--cdel,0ms) both;}
 /* live feed component */
-#lf-wrap{position:relative;margin-top:-100px;width:260px;height:296px;overflow:hidden;z-index:1;pointer-events:none;
+#lf-wrap{position:relative;margin-top:-100px;width:260px;height:clamp(120px,calc(100svh - 460px),296px);overflow:hidden;z-index:1;pointer-events:none;
   mask-image:linear-gradient(to bottom,transparent 0%,black 54px,black 100%);
   -webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 54px,black 100%);}
 #lf-inner{will-change:transform;}
@@ -124,6 +124,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(10,10,10,0.9
 .lf-icon{width:14px;font-size:11px;flex-shrink:0;text-align:center;}
 .lf-act{font-family:var(--mono);font-size:8px;letter-spacing:1.6px;color:rgba(255,255,255,0.22);flex-shrink:0;width:64px;}
 .lf-hdl{font-family:var(--mono);font-size:8px;letter-spacing:1px;color:rgba(255,255,255,0.40);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* agent floating indicator */
+#lf-agent{position:absolute;right:12px;top:50%;transform:translateY(calc(-50% - 30px));display:flex;align-items:center;gap:5px;font-family:var(--mono);font-size:7px;letter-spacing:1.5px;color:rgba(0,255,136,0.50);pointer-events:none;transition:opacity .2s;animation:lf-float 4s ease-in-out infinite;}
+#lf-agent-cur{width:1.5px;height:9px;background:rgba(0,255,136,0.80);flex-shrink:0;animation:lf-blink 1s step-end infinite;}
+@keyframes lf-float{0%,100%{transform:translateY(calc(-50% - 30px));}50%{transform:translateY(calc(-50% + 30px));}}
+@keyframes lf-blink{0%,100%{opacity:1;}50%{opacity:0;}}
+/* custom cursor */
+#lf-xcursor{position:fixed;top:0;left:0;pointer-events:none;z-index:9999;display:none;align-items:center;gap:5px;font-family:var(--mono);font-size:8px;letter-spacing:1.5px;color:rgba(0,255,136,0.9);white-space:nowrap;}
+#lf-xcursor-bar{width:1.5px;height:12px;background:var(--accent);flex-shrink:0;animation:lf-blink 1s step-end infinite;}
 .hero-badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border2);padding:5px 14px;font-size:9px;letter-spacing:2.5px;color:var(--text-dim);margin-bottom:28px;position:relative;z-index:2;background:var(--bg);}
 .hero-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:pulse 2s ease infinite;}
 @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,255,136,.4)}50%{opacity:.5;box-shadow:0 0 0 4px rgba(0,255,136,0)}}
@@ -145,7 +153,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:999;background:rgba(10,10,10,0.9
 .hstat-l{font-size:9px;letter-spacing:2px;color:var(--text-dim);margin-top:2px;}
 
 /* ── TICKER ── */
-.ticker-wrap{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:11px 0;overflow:hidden;white-space:nowrap;}
+.ticker-wrap{position:absolute;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:11px 0;overflow:hidden;white-space:nowrap;}
 .ticker-inner{display:inline-flex;animation:scroll 35s linear infinite;}
 @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 .tick-item{display:inline-flex;align-items:center;gap:10px;padding:0 28px;font-size:9px;letter-spacing:2px;color:var(--text-dim);border-right:1px solid var(--border);}
@@ -337,8 +345,8 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:28px
 @media(max-width:880px){
   nav{padding:0 20px;}
   .nav-links{display:none;}
-  .hero{padding:88px 24px 64px;}
-  #lf-wrap{margin-top:-88px;height:284px;}
+  .hero{padding:88px 24px 52px;}
+  #lf-wrap{margin-top:-88px;}
   .wrap{padding:64px 24px;}
   .final{padding-left:24px;padding-right:24px;}
   /* Hero stats: 3 columns */
@@ -497,8 +505,8 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:28px
   nav{padding:0 16px;}
   .nav-logo{font-size:11px;letter-spacing:3px;}
   .nav-cta{padding:7px 14px;font-size:9px;letter-spacing:1px;}
-  .hero{padding:72px 16px 56px;}
-  #lf-wrap{margin-top:-72px;height:268px;}
+  .hero{padding:72px 16px 52px;}
+  #lf-wrap{margin-top:-72px;}
   .hero h1{letter-spacing:-1.5px;}
   .hero-badge{font-size:8px;letter-spacing:1.8px;}
   .hero-sub{font-size:12px;}
@@ -604,10 +612,9 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:28px
     <div class="stat-dot"></div>
     <div class="stat-dot"></div>
   </div>
-</section>
 
-<!-- TICKER -->
-<div class="ticker-wrap">
+  <!-- TICKER pinned to bottom of hero -->
+  <div class="ticker-wrap">
   <div class="ticker-inner">
     <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg></span>REPLIES IN YOUR VOICE</div>
     <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span>AUTO-LIKES RELEVANT TWEETS</div>
@@ -628,6 +635,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:28px
     <div class="tick-item"><span class="tick-icon"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="1"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>100% LOCAL — NO CLOUD</div>
   </div>
 </div>
+</section>
 
 <!-- PROBLEM -->
 <section class="wrap wrap-left" id="problem">
@@ -1667,6 +1675,21 @@ document.querySelectorAll('.feat-card,.feat-hero,.prob-card,.step-card,.testi').
     inner.style.transform = 'translateY(-' + offset + 'px)';
     raf = requestAnimationFrame(tick);
   }
+
+  /* floating agent indicator */
+  const agentEl = document.createElement('div');
+  agentEl.id = 'lf-agent';
+  agentEl.innerHTML = '<div id="lf-agent-cur"></div><span>X AGENT</span>';
+  wrap.appendChild(agentEl);
+
+  /* custom cursor on hover */
+  const xcursor = document.createElement('div');
+  xcursor.id = 'lf-xcursor';
+  xcursor.innerHTML = '<div id="lf-xcursor-bar"></div><span>X AGENT</span>';
+  document.body.appendChild(xcursor);
+  wrap.addEventListener('mouseenter', () => { wrap.style.cursor='none'; xcursor.style.display='flex'; agentEl.style.opacity='0'; });
+  wrap.addEventListener('mouseleave', () => { wrap.style.cursor=''; xcursor.style.display='none'; agentEl.style.opacity='1'; });
+  wrap.addEventListener('mousemove', e => { xcursor.style.transform='translate('+(e.clientX+10)+'px,'+(e.clientY-6)+'px)'; });
 
   /* pause when hero not visible */
   new IntersectionObserver(([e]) => {
