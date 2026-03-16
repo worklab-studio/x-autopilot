@@ -86,33 +86,96 @@ async def _idle_scroll(page, scrolls: int = 2):
         return
 
 
-async def _sleep_with_countdown(minutes: int, status_template: str, set_status_fn):
-    if minutes <= 0:
-        return
-    for remaining in range(minutes, 0, -1):
-        await set_status_fn(status_template.format(mins=remaining))
-        await asyncio.sleep(random.uniform(55, 65))
+async def _poll_skip(set_status_fn) -> bool:
+    """
+    Check the skip-break file flag. Returns True immediately if set.
+    Uses only the file flag (written by the API endpoint) — no page.evaluate()
+    needed, so it works even while the page is navigating or reloading.
+    """
+    from agent.status_overlay import skip_break_requested, clear_skip_break_flag
+    if skip_break_requested():
+        clear_skip_break_flag()
+        print("⏩  Break skipped by user.")
+        await set_status_fn("⏩ Break skipped — starting next session")
+        return True
+    return False
 
 
-async def _sleep_with_idle_scroll(page, minutes: int, status_template: str, set_status_fn, config: dict, allow_scroll: bool = True):
+async def _sleep_with_countdown(minutes: int, status_template: str, set_status_fn, page=None) -> bool:
+    """
+    Sleep for `minutes` with a visible countdown.
+    Polls the skip-break flag every 3 seconds so the Skip button
+    in the overlay takes effect almost instantly.
+    Returns True if the sleep was cut short by the user (skip), False if it ran fully.
+    """
     if minutes <= 0:
-        return
+        return False
+
+    total_secs = minutes * 60
+    elapsed = 0.0
+    POLL = 3  # check skip every 3 seconds
+
+    # Show initial status immediately
+    await set_status_fn(status_template.format(mins=minutes))
+
+    while elapsed < total_secs:
+        if await _poll_skip(set_status_fn):
+            return True  # skipped early
+
+        chunk = min(POLL, total_secs - elapsed)
+        await asyncio.sleep(chunk)
+        elapsed += chunk
+
+        displayed_mins = max(1, int((total_secs - elapsed + 59) / 60))
+        await set_status_fn(status_template.format(mins=displayed_mins))
+
+    return False  # completed normally
+
+
+async def _sleep_with_idle_scroll(page, minutes: int, status_template: str, set_status_fn, config: dict, allow_scroll: bool = True) -> bool:
+    """
+    Sleep for `minutes` with optional idle scrolling.
+    Polls the skip-break flag every 3 seconds so the Skip button
+    in the overlay takes effect almost instantly.
+    Returns True if the sleep was cut short by the user (skip), False if it ran fully.
+    """
+    if minutes <= 0:
+        return False
+
     safety = config.get("safety", {}) if config else {}
     scroll_enabled = bool(safety.get("idle_scroll_enabled", False)) and allow_scroll
-    interval = int(safety.get("idle_scroll_interval_minutes", 8) or 8)
+    scroll_interval_secs = int(safety.get("idle_scroll_interval_minutes", 8) or 8) * 60
     scrolls = int(safety.get("idle_scroll_scrolls", 2) or 2)
-    interval = max(1, interval)
-    if scroll_enabled and minutes < interval:
-        interval = minutes
-    elapsed = 0
-    for remaining in range(minutes, 0, -1):
-        await set_status_fn(status_template.format(mins=remaining))
-        elapsed += 1
-        if scroll_enabled and elapsed >= interval:
-            await set_status_fn("Idle scrolling feed")
+    scroll_interval_secs = max(30, scroll_interval_secs)
+
+    total_secs = minutes * 60
+    elapsed = 0.0
+    since_scroll = 0.0
+    POLL = 3  # check skip every 3 seconds
+
+    # Show initial status immediately
+    await set_status_fn(status_template.format(mins=minutes))
+
+    while elapsed < total_secs:
+        if await _poll_skip(set_status_fn):
+            return True  # skipped early
+
+        chunk = min(POLL, total_secs - elapsed)
+        await asyncio.sleep(chunk)
+        elapsed += chunk
+        since_scroll += chunk
+
+        # Idle scroll if due
+        if scroll_enabled and since_scroll >= scroll_interval_secs:
+            await set_status_fn("Idle scrolling feed…")
             await _idle_scroll(page, scrolls=scrolls)
-            elapsed = 0
-        await asyncio.sleep(random.uniform(55, 65))
+            since_scroll = 0.0
+
+        # Update countdown display
+        displayed_mins = max(1, int((total_secs - elapsed + 59) / 60))
+        await set_status_fn(status_template.format(mins=displayed_mins))
+
+    return False  # completed normally
 
 
 async def _no_queue_discovery(page, config: dict, profile: dict):
@@ -152,6 +215,19 @@ async def _no_queue_discovery(page, config: dict, profile: dict):
     await like_from_feed(page, max_likes=like_max)
 
 
+def _is_turbo() -> bool:
+    """Turbo mode: skip all long sleeps for demos/recordings."""
+    return bool(load_config().get("turbo_mode", False))
+
+
+async def _between_action_sleep():
+    """Sleep between actions — 4–10s in turbo mode, 60–180s normally."""
+    if _is_turbo():
+        await asyncio.sleep(random.uniform(4, 10))
+    else:
+        await asyncio.sleep(random.uniform(60, 180))
+
+
 async def _run_action_sequence(actions: list, profile: dict, nav_limit: int = None):
     action_list = [(name, fn, nav_heavy) for name, fn, nav_heavy in actions if fn is not None]
     if not action_list:
@@ -166,7 +242,7 @@ async def _run_action_sequence(actions: list, profile: dict, nav_limit: int = No
         if nav_heavy:
             nav_used += 1
         if index < len(action_list) - 1:
-            await asyncio.sleep(random.uniform(60, 180))
+            await _between_action_sleep()
 
 
 async def morning_session(page):
@@ -196,7 +272,8 @@ async def morning_session(page):
     if config.get("posting", {}).get("auto_generate_promos", False):
         await generate_and_queue_promo_tweet(load_config())
 
-    await asyncio.sleep(random.uniform(30, 90))
+    if not _is_turbo():
+        await asyncio.sleep(random.uniform(30, 90))
 
     # Post any approved tweets
     await set_status("Posting approved tweets")
@@ -206,7 +283,7 @@ async def morning_session(page):
         await _no_queue_discovery(page, config, profile)
     elif post_result == "limit":
         await set_status("Tweet limit reached")
-    await asyncio.sleep(random.uniform(60, 180))
+    await _between_action_sleep()
 
     reply_max = 8
     like_max = 12
@@ -318,7 +395,7 @@ async def evening_session(page):
     if config.get("posting", {}).get("auto_generate_tweets", False):
         await set_status("Generating evening tweet")
         await generate_and_queue_tweet(tweet_type="personal")
-        await asyncio.sleep(random.uniform(60, 180))
+        await _between_action_sleep()
 
     if config.get("posting", {}).get("auto_generate_promos", False):
         await set_status("Queueing promo tweet")
@@ -332,7 +409,8 @@ async def evening_session(page):
         await _no_queue_discovery(page, config, profile)
     elif post_result == "limit":
         await set_status("Tweet limit reached")
-    await asyncio.sleep(random.uniform(120, 300))
+    if not _is_turbo():
+        await asyncio.sleep(random.uniform(120, 300))
 
     reply_max = 10
     like_max = 10
@@ -420,6 +498,7 @@ async def run_scheduler(page):
     await set_status("Scheduler started")
 
     snapshot_saved_today = False
+    skip_next_break = False  # set True when user skips a sleep so we jump straight to next session
 
     while True:
         # Check if paused from dashboard
@@ -438,7 +517,7 @@ async def run_scheduler(page):
         if not is_active_hours():
             print("😴 Outside active hours — agent sleeping...")
             await set_status("Sleeping (outside active hours)")
-            await asyncio.sleep(300)  # Check every 5 mins
+            await asyncio.sleep(30 if _is_turbo() else 300)  # turbo: 30s, normal: 5 mins
             continue
 
         now = datetime.now()
@@ -449,13 +528,13 @@ async def run_scheduler(page):
         if catch_up:
             await set_status("Catch-up mode: using remaining limits")
 
-        # Save daily growth snapshot once per day at 8am
-        if hour == 8 and not snapshot_saved_today:
+        # Save growth snapshot at 8am and 6pm to keep today's count fresh
+        if hour in (8, 18) and not snapshot_saved_today:
             await save_growth_snapshot(page)
             snapshot_saved_today = True
 
-        # Reset daily snapshot flag at midnight
-        if hour == 0:
+        # Reset daily snapshot flag at midnight and at 9am (so 6pm can fire again)
+        if hour == 0 or hour == 9:
             snapshot_saved_today = False
 
         # ── Weekend behaviour: reduce action quotas ─────────────────────────
@@ -465,59 +544,73 @@ async def run_scheduler(page):
             print(f"📅 {day_name} — scaling activity to {int(wk_scale*100)}% of normal")
             await set_status(f"{day_name} mode ({int(wk_scale*100)}% activity)")
 
-        # ── 20% chance: dead scroll instead of real session ──────────────────
-        if random.random() < 0.20 and not catch_up:
-            await dead_scroll_session(page)
-            # Also optionally do a curiosity visit after browsing
-            if random.random() < 0.40:
+        turbo = _is_turbo()
+
+        # ── If the user just skipped a break/sleep, go straight to the session ──
+        if skip_next_break:
+            skip_next_break = False
+            # Fall through directly to the session block below
+        elif turbo:
+            pass  # turbo mode: skip all dead-scroll, curiosity, and break rolls
+        else:
+            # ── 20% chance: dead scroll instead of real session ──────────────────
+            if random.random() < 0.20 and not catch_up:
+                await dead_scroll_session(page)
+                # Also optionally do a curiosity visit after browsing
+                if random.random() < 0.40:
+                    await curiosity_profile_visit(page)
+                wait_mins = random.randint(60, 120)
+                was_skipped = await _sleep_with_idle_scroll(page, wait_mins, "Idle after browsing ({mins} min)", set_status, config)
+                if was_skipped:
+                    skip_next_break = True  # bypass break roll on the next pass
+                continue  # regardless, loop back (skip_next_break will short-circuit rolls next time)
+
+            # ── 15% chance: curiosity profile visit before main session ──────────
+            if random.random() < 0.15 and not catch_up:
                 await curiosity_profile_visit(page)
-            wait_mins = random.randint(60, 120)
-            await _sleep_with_idle_scroll(page, wait_mins, "Idle after browsing ({mins} min)", set_status, config)
-            continue
+                await human_delay(30, 90)
 
-        # ── 15% chance: curiosity profile visit before main session ──────────
-        if random.random() < 0.15 and not catch_up:
-            await curiosity_profile_visit(page)
-            await human_delay(30, 90)
-
-
-        # Random break simulation (lower on weekends — already quieter overall)
-        break_chance = 0.20 if is_weekend() else 0.30
-        if random.random() < break_chance and not catch_up:
-            break_mins = random.randint(20, 60)
-            print(f"☕ Taking a {break_mins} minute break (simulating human)...")
-            await _sleep_with_countdown(break_mins, "Taking a break (~{mins} min)", set_status)
-            continue
+            # ── Random break simulation ──────────────────────────────────────────
+            break_chance = 0.20 if is_weekend() else 0.30
+            if random.random() < break_chance and not catch_up:
+                break_mins = random.randint(20, 60)
+                print(f"☕ Taking a {break_mins} minute break (simulating human)...")
+                was_skipped = await _sleep_with_countdown(break_mins, "Taking a break (~{mins} min)", set_status, page=page)
+                if not was_skipped:
+                    continue  # normal end of break — loop back for next session decision
+                # if skipped, fall through immediately to run a session now
 
         # Determine session dynamically to avoid hard-gated 4-hour blocks
         try:
             active_sessions = [morning_session, afternoon_session, evening_session]
-            
+
             if hour < 12:
-                # mostly morning, some afternoon
                 session_func = random.choices(active_sessions, weights=[85, 15, 0])[0]
             elif 12 <= hour < 17:
-                # mostly afternoon, some morning/evening
                 session_func = random.choices(active_sessions, weights=[15, 70, 15])[0]
             else:
-                # mostly evening, some afternoon
                 session_func = random.choices(active_sessions, weights=[0, 15, 85])[0]
-                
+
             await session_func(page)
 
         except Exception as e:
             print(f"⚠️  Session error: {e}")
-            print("Waiting 5 minutes before retrying...")
             await set_status("Session error — retrying soon")
-            await asyncio.sleep(300)
+            await asyncio.sleep(15 if _is_turbo() else 300)
 
-        # Wait between sessions (45-90 mins)
-        if catch_up:
+        # Wait between sessions
+        if turbo:
+            print(f"\n⚡ Turbo mode — firing next session immediately...")
+            await set_status("⚡ Turbo: loading next session...")
+            await asyncio.sleep(3)
+        elif catch_up:
             wait_mins = random.randint(6, 15)
             print(f"\n⏳ Catch-up wait ~{wait_mins} minutes...")
             await _sleep_with_idle_scroll(page, wait_mins, "Catch-up idle (~{mins} min)", set_status, config)
         else:
-            # Sleep 2-3 hours to avoid runaway sequential sessions within the same time block
+            # Sleep 2-3 hours before next session
             wait_mins = random.randint(120, 180)
             print(f"\n⏳ Next session in ~{wait_mins} minutes...")
-            await _sleep_with_idle_scroll(page, wait_mins, "Sleeping {mins} min until next session", set_status, config)
+            was_skipped = await _sleep_with_idle_scroll(page, wait_mins, "Sleeping {mins} min until next session", set_status, config)
+            if was_skipped:
+                skip_next_break = True  # next loop: skip random rolls, go straight to session

@@ -57,7 +57,9 @@ async def run_agent():
     print("\nAgent is running… Click ✕ Quit in the browser overlay or press Ctrl+C to stop.\n")
     await set_status("Agent live — scheduler running")
 
-    from agent.scheduler import run_scheduler
+    # Take an immediate follower snapshot so the growth chart shows real data from day 1
+    from agent.scheduler import save_growth_snapshot, run_scheduler
+    await save_growth_snapshot(page)
 
     # Run scheduler as a background task so we can poll for quit
     scheduler_task = asyncio.ensure_future(run_scheduler(page))
