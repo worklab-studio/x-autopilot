@@ -20,20 +20,51 @@ TWITTER_HOME = "https://x.com/home"
 TWITTER_LOGIN = "https://x.com/i/flow/login"
 
 
+def _clear_chrome_profile():
+    """Delete the Chrome profile directory so the next launch starts fresh."""
+    import shutil
+    profile_dir = Path(__file__).parent.parent / "data" / "chrome_profile"
+    cookies_file = Path(__file__).parent.parent / "data" / "twitter_cookies.json"
+    try:
+        if profile_dir.exists():
+            shutil.rmtree(profile_dir)
+        cookies_file.unlink(missing_ok=True)
+        print("🗑  Chrome profile cleared — will log in fresh on next start.")
+    except Exception as e:
+        print(f"⚠️  Could not clear Chrome profile: {e}")
+
+
 async def is_logged_in(page) -> bool:
     """Check if we're currently logged in to Twitter."""
     try:
-        await page.goto(TWITTER_HOME, wait_until="domcontentloaded", timeout=15000)
-        await human_delay(2, 4)
+        await page.goto(TWITTER_HOME, wait_until="domcontentloaded", timeout=20000)
+        # Always use a fixed 3s wait here — turbo mode shrinks human_delay
+        # but login detection needs real page load time regardless of mode
+        await asyncio.sleep(3)
 
         # If we're redirected to login page, we're not logged in
         current_url = page.url
         if "login" in current_url or "i/flow" in current_url:
             return False
 
-        # Check for the home timeline element
-        timeline = await page.query_selector('[data-testid="primaryColumn"]')
-        return timeline is not None
+        # Detect stuck X-logo loading screen: page stays on x.com but
+        # primaryColumn never appears. This happens when the Chrome profile
+        # is corrupted — React hydration loops forever.
+        try:
+            await page.wait_for_selector('[data-testid="primaryColumn"]', timeout=10000)
+            return True
+        except PlaywrightTimeoutError:
+            # Check if we're stuck on the X logo splash screen
+            try:
+                url = page.url or ""
+                body_text = await page.evaluate("document.body ? document.body.innerText : ''")
+                if "x.com" in url and len(body_text.strip()) < 50:
+                    print("⚠️  Browser stuck on X loading screen — Chrome profile is likely corrupted.")
+                    print("   Clearing profile so the next run starts with a clean browser...")
+                    _clear_chrome_profile()
+            except Exception:
+                pass
+            return False
 
     except Exception as e:
         print(f"⚠️  Login check failed: {e}")
