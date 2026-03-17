@@ -11,7 +11,7 @@ import os
 import urllib.parse
 from pathlib import Path
 from datetime import datetime, timedelta
-from agent.browser import human_delay, human_click, human_scroll
+from agent.browser import human_delay, human_click, human_scroll, human_navigate
 from agent.targets import get_target_accounts, load_targets
 from agent.logger import log_action, is_limit_reached, DB_PATH
 from agent.status_overlay import set_status
@@ -71,8 +71,7 @@ async def follow_user(page, username: str) -> bool:
     """Follow a Twitter user."""
     try:
         config = load_config()
-        await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
-        await human_delay(2, 3)
+        await human_navigate(page, f"https://x.com/{username}")
         if random.random() < 0.6:
             await human_scroll(page, amount=random.randint(200, 500))
             await human_delay(0.6, 1.2)
@@ -124,8 +123,7 @@ async def get_account_followers_list(page, username: str, limit: int = 30) -> li
         # Search for the user first to make it look like human behavior
         query = urllib.parse.quote(username)
         url = f"https://x.com/search?q={query}&src=typed_query&f=user"
-        await page.goto(url, wait_until="domcontentloaded")
-        await human_delay(2, 4)
+        await human_navigate(page, url)
 
         # Look for the user in search results and click their profile
         user_cells = await page.query_selector_all('[data-testid="UserCell"]')
@@ -135,8 +133,7 @@ async def get_account_followers_list(page, username: str, limit: int = 30) -> li
             await human_delay(2, 4)
         else:
             # Fallback directly to profile
-            await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
-            await human_delay(2, 4)
+            await human_navigate(page, f"https://x.com/{username}")
 
         # Now click their Followers link instead of direct navigation
         followers_link = await page.query_selector(f'a[href*="/{username}/followers" i]')
@@ -145,8 +142,7 @@ async def get_account_followers_list(page, username: str, limit: int = 30) -> li
             await human_delay(2, 4)
         else:
             # Extreme fallback
-            await page.goto(f"https://x.com/{username}/followers", wait_until="domcontentloaded")
-            await human_delay(2, 4)
+            await human_navigate(page, f"https://x.com/{username}/followers")
 
         # Scroll and collect usernames
         max_scrolls = random.randint(2, 4)
@@ -181,8 +177,7 @@ async def get_mentions_engagers(page, limit: int = 20) -> list:
     """Get users who mentioned or replied to us (engagement source)."""
     usernames = []
     try:
-        await page.goto("https://x.com/notifications/mentions", wait_until="domcontentloaded")
-        await human_delay(2, 4)
+        await human_navigate(page, "https://x.com/notifications/mentions")
 
         for _ in range(3):
             tweets = await page.query_selector_all('[data-testid="tweet"]')
@@ -450,8 +445,7 @@ async def run_unfollow_session(page, max_unfollows: int = 15):
 async def _unfollow_user(page, username: str) -> bool:
     """Unfollow a user."""
     try:
-        await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
-        await human_delay(2, 3)
+        await human_navigate(page, f"https://x.com/{username}")
 
         # Find Following button (which we click to unfollow)
         btn = await page.query_selector(f'[aria-label="Following @{username}"]')

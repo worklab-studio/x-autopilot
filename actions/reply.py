@@ -12,7 +12,7 @@ import sqlite3
 import urllib.parse
 from datetime import datetime
 from pathlib import Path
-from agent.browser import human_delay, human_type, human_click, human_scroll
+from agent.browser import human_delay, human_type, human_click, human_scroll, human_navigate
 from agent.logger import log_action, is_limit_reached, get_daily_count, DB_PATH
 from agent.targets import get_target_accounts, maybe_auto_add_target, remove_target
 from agent.hashtags import load_hashtags
@@ -149,8 +149,7 @@ async def _profile_missing(page) -> bool:
 async def get_follower_count(page, username: str):
     """Get follower count for a Twitter user."""
     try:
-        await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
-        await human_delay(2, 3)
+        await human_navigate(page, f"https://x.com/{username}")
 
         if await _profile_missing(page):
             print(f"⚠️  @{username} does not exist or is unavailable")
@@ -179,8 +178,7 @@ async def get_follower_count(page, username: str):
 async def get_profile_snapshot(page, username: str, count: int = 3, allow_self: bool = False):
     """Load a profile once and return follower count + recent tweets."""
     try:
-        await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
-        await human_delay(2, 3)
+        await human_navigate(page, f"https://x.com/{username}")
 
         if await _profile_missing(page):
             print(f"⚠️  @{username} does not exist or is unavailable")
@@ -602,8 +600,7 @@ async def _search_hashtag_tweets(page, hashtag: str, max_tweets: int = 40, top_r
     if top_count > 0:
         query = urllib.parse.quote(tag)
         url = f"https://x.com/search?q={query}&src=typed_query"
-        await page.goto(url, wait_until="domcontentloaded")
-        await human_delay(2.5, 4.5)
+        await human_navigate(page, url)
         top_tweets = await _collect_tweets_from_page(page, max_tweets=top_count, scrolls=2)
         for tweet in top_tweets:
             if tweet.get("url") and tweet["url"] not in seen:
@@ -613,8 +610,7 @@ async def _search_hashtag_tweets(page, hashtag: str, max_tweets: int = 40, top_r
     if latest_count > 0:
         query = urllib.parse.quote(tag)
         url = f"https://x.com/search?q={query}&src=typed_query&f=live"
-        await page.goto(url, wait_until="domcontentloaded")
-        await human_delay(2.5, 4.5)
+        await human_navigate(page, url)
         latest_tweets = await _collect_tweets_from_page(page, max_tweets=latest_count, scrolls=2)
         for tweet in latest_tweets:
             if tweet.get("url") and tweet["url"] not in seen:
@@ -625,14 +621,12 @@ async def _search_hashtag_tweets(page, hashtag: str, max_tweets: int = 40, top_r
 
 
 async def _home_feed_tweets(page, max_tweets: int = 50) -> list:
-    await page.goto("https://x.com/home", wait_until="domcontentloaded")
-    await human_delay(2, 3)
+    await human_navigate(page, "https://x.com/home")
     return await _collect_tweets_from_page(page, max_tweets=max_tweets, scrolls=2)
 
 
 async def _get_full_thread_context(page, tweet_url: str, author: str, config: dict) -> dict:
-    await page.goto(tweet_url, wait_until="domcontentloaded")
-    await human_delay(2, 4)
+    await human_navigate(page, tweet_url)
 
     expand_selectors = [
         'div[role="button"]:has-text("Show more")',
@@ -716,8 +710,7 @@ async def get_latest_tweets(page, username: str, count: int = 3, allow_self: boo
     """Get the most recent tweets from a user's profile."""
     tweets = []
     try:
-        await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
-        await human_delay(2, 4)
+        await human_navigate(page, f"https://x.com/{username}")
 
         # Find tweet articles
         tweet_articles = await page.query_selector_all('[data-testid="tweet"]')
@@ -742,8 +735,7 @@ async def reply_to_tweet(page, tweet_url: str, reply_text: str, media_path: str 
         config = load_config()
         reply_text = apply_tool_mentions(reply_text, config)
 
-        await page.goto(tweet_url, wait_until="domcontentloaded")
-        await human_delay(2, 4)
+        await human_navigate(page, tweet_url)
 
         # Find the reply box
         # Twitter's UI changes frequently. Include fallbacks for both the

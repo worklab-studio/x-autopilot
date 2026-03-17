@@ -8,7 +8,7 @@ import asyncio
 import random
 import os
 from pathlib import Path
-from agent.browser import human_delay, human_click, human_scroll
+from agent.browser import human_delay, human_click, human_scroll, human_navigate
 from agent.logger import log_action, is_limit_reached, DB_PATH
 from agent import quality
 import sqlite3
@@ -77,8 +77,7 @@ async def like_tweet(page, tweet_url: str = None) -> bool:
     try:
         config = load_config()
         if tweet_url:
-            await page.goto(tweet_url, wait_until="domcontentloaded")
-            await human_delay(1.5, 3)
+            await human_navigate(page, tweet_url)
 
         like_btn = await page.query_selector('[data-testid="like"]')
         if like_btn:
@@ -114,8 +113,7 @@ async def like_from_feed(page, max_likes: int = 10):
         return
 
     await set_status("Liking home feed")
-    await page.goto("https://x.com/home", wait_until="domcontentloaded")
-    await human_delay(2, 3)
+    await human_navigate(page, "https://x.com/home")
 
     liked = 0
     scrolls = 0
@@ -200,8 +198,7 @@ def _normalize_username(value: str) -> str:
 
 
 async def _home_feed_authors(page, max_tweets: int = 50) -> list:
-    await page.goto("https://x.com/home", wait_until="domcontentloaded")
-    await human_delay(2, 3)
+    await human_navigate(page, "https://x.com/home")
 
     authors = []
     seen = set()
@@ -242,8 +239,7 @@ async def _like_profile_posts(page, username: str, target_likes: int, config: di
     keywords = quality.relevance_keywords(config)
 
     await set_status(f"Profile likes @{username}")
-    await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
-    await human_delay(2, 3)
+    await human_navigate(page, f"https://x.com/{username}")
 
     liked = 0
     scrolls = 0

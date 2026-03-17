@@ -7,7 +7,7 @@ import random
 import sqlite3
 from pathlib import Path
 
-from agent.browser import human_delay, human_click, human_scroll
+from agent.browser import human_delay, human_click, human_scroll, human_navigate
 from agent.logger import log_action, is_limit_reached, DB_PATH
 from agent.status_overlay import set_status
 from agent import quality
@@ -63,8 +63,7 @@ def _already_welcomed(username: str) -> bool:
 
 
 async def _collect_mentions(page, max_tweets: int = 20) -> list:
-    await page.goto("https://x.com/notifications/mentions", wait_until="domcontentloaded")
-    await human_delay(2, 3)
+    await human_navigate(page, "https://x.com/notifications/mentions")
 
     tweets = []
     seen = set()
@@ -93,8 +92,14 @@ async def _collect_mentions(page, max_tweets: int = 20) -> list:
 
 
 async def _collect_conversation_context(page, tweet_url: str, config: dict) -> dict:
-    await page.goto(tweet_url, wait_until="domcontentloaded")
-    await human_delay(2, 4)
+    await human_navigate(page, tweet_url)
+
+    # Scroll to very top so we see the thread root first
+    try:
+        await page.evaluate("window.scrollTo(0, 0)")
+        await human_delay(0.5, 1.0)
+    except Exception:
+        pass
 
     expand_selectors = [
         'div[role="button"]:has-text("Show more")',
@@ -130,7 +135,16 @@ async def _collect_conversation_context(page, tweet_url: str, config: dict) -> d
     except Exception:
         pass
 
-    collected = []
+    # Scroll back to top before collecting so articles appear in thread order
+    try:
+        await page.evaluate("window.scrollTo(0, 0)")
+        await human_delay(0.5, 1.0)
+    except Exception:
+        pass
+
+    # Collect articles with per-author labelling
+    collected = []   # list of {"text": str, "author": str, "is_self": bool}
+    seen_texts = set()
     has_video = False
 
     for _ in range(4):
@@ -141,9 +155,13 @@ async def _collect_conversation_context(page, tweet_url: str, config: dict) -> d
                 continue
             if parsed.get("has_video"):
                 has_video = True
-            text = parsed.get("text")
-            if text and text not in collected:
-                collected.append(text)
+            text = (parsed.get("text") or "").strip()
+            if not text or text in seen_texts:
+                continue
+            seen_texts.add(text)
+            author = parsed.get("author", "").lower().strip("/")
+            is_self = bool(self_username and author == self_username.lower())
+            collected.append({"text": text, "author": author, "is_self": is_self})
             if len(collected) >= 10:
                 break
         if len(collected) >= 10:
@@ -151,7 +169,30 @@ async def _collect_conversation_context(page, tweet_url: str, config: dict) -> d
         await human_scroll(page, amount=900)
         await human_delay(1.5, 2.5)
 
-    thread_text = "\n\n".join(collected).strip()
+    # Build a structured context string the AI can clearly understand:
+    # [ORIGINAL POST] → [YOUR PREVIOUS REPLY] → [THEIR REPLY]
+    context_parts = []
+    original_added = False
+    self_reply_added = False
+    their_reply_added = False
+
+    for item in collected:
+        if not original_added and not item["is_self"]:
+            context_parts.append(f"[ORIGINAL POST by @{item['author']}]\n{item['text']}")
+            original_added = True
+        elif original_added and not self_reply_added and item["is_self"]:
+            context_parts.append(f"[YOUR PREVIOUS REPLY]\n{item['text']}")
+            self_reply_added = True
+        elif self_reply_added and not their_reply_added and not item["is_self"]:
+            context_parts.append(f"[THEIR REPLY to you]\n{item['text']}")
+            their_reply_added = True
+
+    if context_parts:
+        thread_text = "\n\n".join(context_parts).strip()
+    else:
+        # Fallback: plain join if we couldn't label the structure
+        thread_text = "\n\n".join(item["text"] for item in collected).strip()
+
     return {
         "thread_text": thread_text,
         "has_video": has_video,
@@ -160,8 +201,7 @@ async def _collect_conversation_context(page, tweet_url: str, config: dict) -> d
 
 
 async def _collect_follow_notifications(page, max_users: int = 10) -> list:
-    await page.goto("https://x.com/notifications", wait_until="domcontentloaded")
-    await human_delay(2, 3)
+    await human_navigate(page, "https://x.com/notifications")
 
     users = []
     seen = set()
@@ -254,7 +294,12 @@ async def run_notifications_session(page):
                     author=tweet["author"],
                     author_followers=followers,
                     tier=tier,
-                    extra_context="Follow-up from notifications. Full thread context included."
+                    extra_context=(
+                        "This is a follow-up reply from your notifications. "
+                        "The context above shows the full conversation: the original post, "
+                        "your previous reply, and their response to you. "
+                        "Read the whole thread carefully before deciding how to continue the conversation naturally."
+                    )
                 )
                 reply_text = reply_payload.get("text") if reply_payload else ""
                 if not reply_text:

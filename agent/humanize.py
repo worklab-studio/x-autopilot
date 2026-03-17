@@ -53,7 +53,7 @@ async def dead_scroll_session(page, min_scrolls: int = 6, max_scrolls: int = 18)
     Simulates a human who opens Twitter, browses passively, then leaves.
     Called ~20% of the time from the scheduler instead of a real session.
     """
-    from agent.browser import human_scroll, human_delay
+    from agent.browser import human_scroll, human_delay, human_navigate
 
     n = random.randint(min_scrolls, max_scrolls)
     print(f"📜 Dead scroll session — just browsing ({n} scrolls, no engagement)")
@@ -65,8 +65,7 @@ async def dead_scroll_session(page, min_scrolls: int = 6, max_scrolls: int = 18)
     try:
         url = page.url or ""
         if "twitter.com" not in url and "x.com" not in url:
-            await page.goto("https://x.com/home", wait_until="domcontentloaded")
-            await human_delay(2, 4)
+            await human_navigate(page, "https://x.com/home")
 
         for _ in range(n):
             await human_scroll(page, amount=random.randint(250, 700))
@@ -92,7 +91,7 @@ async def curiosity_profile_visit(page, candidates: list = None) -> None:
     `candidates` is an optional list of Twitter usernames to visit.
     If empty, navigates to the home feed and picks names from UserCell elements.
     """
-    from agent.browser import human_scroll, human_delay, human_click
+    from agent.browser import human_scroll, human_delay, human_click, human_navigate
 
     try:
         await set_status("Browsing profiles out of curiosity")
@@ -104,8 +103,7 @@ async def curiosity_profile_visit(page, candidates: list = None) -> None:
     # Resolve candidates from feed if none provided
     if not candidates:
         try:
-            await page.goto("https://x.com/home", wait_until="domcontentloaded")
-            await human_delay(2, 4)
+            await human_navigate(page, "https://x.com/home")
             cells = await page.query_selector_all('[data-testid="tweet"]')
             _names = []
             for cell in cells[:20]:
@@ -131,8 +129,7 @@ async def curiosity_profile_visit(page, candidates: list = None) -> None:
     for username in chosen:
         try:
             print(f"👀 Curiosity visit: @{username} (no engagement planned)")
-            await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
-            await human_delay(2, 5)
+            await human_navigate(page, f"https://x.com/{username}")
 
             # Scroll through a bit — like a human reading a profile
             scrolls = random.randint(2, 5)

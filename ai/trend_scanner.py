@@ -11,7 +11,7 @@ import random
 import uuid
 from pathlib import Path
 from datetime import datetime
-from agent.browser import human_delay, human_scroll
+from agent.browser import human_delay, human_scroll, human_navigate
 from ai.tweet_writer import generate_tweet
 from agent.logger import add_to_tweet_queue, log_action
 from agent.targets import get_target_accounts
@@ -53,8 +53,7 @@ async def scrape_trending_topics(page) -> list:
     trends = []
     try:
         print("🔍 Scanning trending topics...")
-        await page.goto("https://x.com/explore/tabs/trending", wait_until="domcontentloaded")
-        await human_delay(3, 5)
+        await human_navigate(page, "https://x.com/explore/tabs/trending")
 
         # Scroll a bit to load more trends
         await human_scroll(page, amount=500)
@@ -111,8 +110,7 @@ async def scrape_niche_feed(page, config: dict) -> list:
 
     for username in sample:
         try:
-            await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
-            await human_delay(2, 3)
+            await human_navigate(page, f"https://x.com/{username}")
 
             # Get their recent tweets
             tweet_els = await page.query_selector_all('[data-testid="tweetText"]')

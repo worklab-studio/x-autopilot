@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 from dotenv import load_dotenv
-from agent.browser import human_delay, human_type, human_click
+from agent.browser import human_delay, human_type, human_click, human_navigate
 from agent.logger import (
     log_action, is_limit_reached, add_to_tweet_queue,
     get_pending_tweets, approve_tweet, get_daily_count
@@ -281,8 +281,7 @@ async def _post_tweet(page, content: str, media_path: str = None, media_type: st
         content = apply_tool_mentions(content, config)
 
         # Navigate to home
-        await page.goto("https://x.com/home", wait_until="domcontentloaded")
-        await human_delay(2, 4)
+        await human_navigate(page, "https://x.com/home")
 
         # Click the tweet compose box
         compose_selectors = [

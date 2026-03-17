@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 from playwright.async_api import async_playwright
 from playwright_stealth import stealth_async
 from dotenv import load_dotenv
@@ -127,6 +128,16 @@ async def close_browser(playwright, browser):
     print("🛑 Browser closed. Session saved.")
 
 
+def _is_turbo() -> bool:
+    try:
+        import yaml
+        cfg_path = Path(__file__).parent.parent / "config.yaml"
+        with open(cfg_path) as f:
+            return bool(yaml.safe_load(f).get("turbo_mode", False))
+    except Exception:
+        return False
+
+
 async def human_delay(min_seconds: float = 1.5, max_seconds: float = 4.5):
     """
     Wait a random human-like amount of time.
@@ -146,7 +157,7 @@ async def human_click(page, element):
         
     try:
         # Give a small natural pause before moving
-        await human_delay(0.1, 0.3)
+        await human_delay(0.05, 0.2)
 
         # Determine target coordinates
         box = await element.bounding_box()
@@ -158,11 +169,11 @@ async def human_click(page, element):
             y_target = box['y'] + (h / 2) + random.uniform(-h/4, h/4)
 
             # Simulates trajectory.
-            steps = random.randint(15, 30)
+            steps = random.randint(8, 18)
             await page.mouse.move(x_target, y_target, steps=steps)
 
-            # Hover dwell: real humans pause 0.3-1.8s on an element before clicking
-            await human_delay(0.3, 1.8)
+            # Hover dwell: real humans pause briefly before clicking
+            await human_delay(0.15, 0.6)
 
     except Exception:
         # Fallback if bounding_box fails or element is hidden
@@ -195,12 +206,12 @@ async def human_type(page, selector: str, text: str, typo_chance: float = 0.06):
             wrong = random.choice(_ADJACENT[char.lower()])
             if char.isupper():
                 wrong = wrong.upper()
-            await element.type(wrong, delay=random.randint(40, 140))
-            await asyncio.sleep(random.uniform(0.08, 0.35))  # moment of realisation
+            await element.type(wrong, delay=random.randint(20, 70))
+            await asyncio.sleep(random.uniform(0.05, 0.2))  # moment of realisation
             await element.press('Backspace')
-            await asyncio.sleep(random.uniform(0.05, 0.15))
+            await asyncio.sleep(random.uniform(0.03, 0.1))
 
-        await element.type(char, delay=random.randint(40, 140))
+        await element.type(char, delay=random.randint(20, 70))
         # Occasional longer pause mid-sentence (like thinking)
         if char in [' ', ',', '.'] and random.random() < 0.1:
             await asyncio.sleep(random.uniform(0.3, 0.8))
@@ -291,5 +302,69 @@ async def human_scroll(page, direction: str = "down", amount: int = None):
             await page.mouse.wheel(0, delta)
             await asyncio.sleep(random.uniform(0.02, 0.05))
 
-    await human_delay(0.4, 1.2)
+    await human_delay(0.15, 0.5)
+
+
+# ── Sidebar route table (longest match first) ─────────────────────────────────
+_SIDEBAR_ROUTES = [
+    ("/explore/tabs/trending",  '[data-testid="AppTabBar_Explore_Link"]'),
+    ("/notifications/mentions", '[data-testid="AppTabBar_Notifications_Link"]'),
+    ("/notifications",          '[data-testid="AppTabBar_Notifications_Link"]'),
+    ("/messages",               '[data-testid="AppTabBar_DirectMessage_Link"]'),
+    ("/explore",                '[data-testid="AppTabBar_Explore_Link"]'),
+    ("/home",                   '[data-testid="AppTabBar_Home_Link"]'),
+    ("/i/bookmarks",            '[data-testid="AppTabBar_Bookmarks_Link"]'),
+]
+
+
+async def human_navigate(page, url: str, wait_until: str = "domcontentloaded"):
+    """
+    Navigate to a URL in a human-like way.
+
+    - For main Twitter sections (/home, /notifications, /messages, /explore, etc.):
+      finds the sidebar nav element and human_click()s it so the cursor visibly
+      moves to the icon before navigating.
+    - For all other URLs (profiles, tweets, search): sweeps the cursor toward the
+      address bar area at the top of the viewport, pauses, then page.goto().
+    - Fallback: if the sidebar element is not found, falls back to address bar mode.
+    - Always adds a brief human_delay after arriving.
+    """
+    parsed_path = (urlparse(url).path or "/").rstrip("/") or "/"
+
+    # Longest-match first: check if this URL belongs to a sidebar-navigable section
+    sidebar_selector = None
+    for route, selector in _SIDEBAR_ROUTES:
+        if parsed_path == route or parsed_path.startswith(route + "/"):
+            sidebar_selector = selector
+            break
+
+    used_sidebar = False
+    if sidebar_selector:
+        try:
+            el = await page.query_selector(sidebar_selector)
+            if el:
+                await human_click(page, el)
+                try:
+                    await page.wait_for_load_state(wait_until, timeout=15000)
+                except Exception:
+                    pass
+                await human_delay(0.5, 1.5)
+                used_sidebar = True
+        except Exception:
+            pass  # fall through to address bar mode
+
+    if not used_sidebar:
+        # Address bar simulation: cursor sweeps to the top-centre of the viewport
+        # (where the Chrome address bar lives) before navigating
+        viewport = page.viewport_size or {}
+        width = viewport.get("width", 1280)
+        x_target = (width / 2) + random.uniform(-40, 40)
+        y_target = random.uniform(28, 42)
+        try:
+            await page.mouse.move(x_target, y_target, steps=random.randint(10, 20))
+        except Exception:
+            pass
+        await human_delay(0.3, 0.7)
+        await page.goto(url, wait_until=wait_until)
+        await human_delay(0.5, 1.5)
 

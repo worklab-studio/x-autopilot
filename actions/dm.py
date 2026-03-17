@@ -10,7 +10,7 @@ import json
 import sqlite3
 from pathlib import Path
 from datetime import datetime
-from agent.browser import human_delay, human_click
+from agent.browser import human_delay, human_click, human_navigate
 from agent.logger import log_action, is_limit_reached, DB_PATH
 from agent.status_overlay import set_status
 from ai.tweet_writer import generate_dm_opener, generate_dm_reply
@@ -133,8 +133,7 @@ async def send_dm(page, username: str, message: str, skip_navigation: bool = Fal
     try:
         # Go to their profile
         if not skip_navigation:
-            await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
-            await human_delay(2, 3)
+            await human_navigate(page, f"https://x.com/{username}")
 
         # Click the Message button
         msg_btn_selectors = [
@@ -244,8 +243,7 @@ async def run_dm_session(page):
 
         # Visit their profile before DMing to simulate human flow
         await set_status(f"DM check @{username}")
-        await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
-        await human_delay(2, 3)
+        await human_navigate(page, f"https://x.com/{username}")
         
         follows_you = await _user_follows_you(page)
         if not follows_you:
@@ -361,8 +359,7 @@ async def check_dm_replies(page):
     Updates conversation status so we know who replied.
     """
     try:
-        await page.goto("https://x.com/messages", wait_until="domcontentloaded")
-        await human_delay(2, 4)
+        await human_navigate(page, "https://x.com/messages")
 
         # Get conversation list
         convos = await page.query_selector_all('[data-testid="conversation"]')

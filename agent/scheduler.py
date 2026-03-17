@@ -69,7 +69,7 @@ def _remaining_actions(config: dict) -> dict:
 
 
 async def _idle_scroll(page, scrolls: int = 2):
-    from agent.browser import human_delay, human_scroll
+    from agent.browser import human_delay, human_scroll, human_navigate
     if not page:
         return
     try:
@@ -77,8 +77,7 @@ async def _idle_scroll(page, scrolls: int = 2):
             return
         url = page.url or ""
         if "twitter.com" not in url and "x.com" not in url:
-            await page.goto("https://x.com/home", wait_until="domcontentloaded")
-            await human_delay(1.2, 2.4)
+            await human_navigate(page, "https://x.com/home")
         for _ in range(max(1, scrolls)):
             await human_scroll(page)
             await human_delay(0.8, 1.6)
@@ -453,6 +452,7 @@ async def evening_session(page):
 async def save_growth_snapshot(page):
     """Once a day, save the follower count for the growth graph."""
     from agent.logger import save_growth_snapshot as _save
+    from agent.browser import human_navigate
 
     try:
         from dotenv import load_dotenv
@@ -460,7 +460,7 @@ async def save_growth_snapshot(page):
         load_dotenv()
         username = os.getenv("TWITTER_USERNAME", "")
 
-        await page.goto(f"https://x.com/{username}", wait_until="domcontentloaded")
+        await human_navigate(page, f"https://x.com/{username}")
         await asyncio.sleep(3)
 
         # Get follower count
