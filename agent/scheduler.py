@@ -85,14 +85,17 @@ async def _idle_scroll(page, scrolls: int = 2):
         return
 
 
-async def _poll_skip(set_status_fn) -> bool:
+async def _poll_skip(set_status_fn, page=None) -> bool:
     """
-    Check the skip-break file flag. Returns True immediately if set.
-    Uses only the file flag (written by the API endpoint) — no page.evaluate()
-    needed, so it works even while the page is navigating or reloading.
+    Check the skip-break flag. Returns True immediately if set.
+    Checks both the file flag (written by the API) and the JS window variable
+    (set directly by the overlay button), so skip works with or without Flask.
     """
-    from agent.status_overlay import skip_break_requested, clear_skip_break_flag
-    if skip_break_requested():
+    from agent.status_overlay import skip_break_requested, clear_skip_break_flag, check_skip_break_button
+    triggered = skip_break_requested()
+    if not triggered and page is not None:
+        triggered = await check_skip_break_button(page)
+    if triggered:
         clear_skip_break_flag()
         print("⏩  Break skipped by user.")
         await set_status_fn("⏩ Break skipped — starting next session")
@@ -118,7 +121,7 @@ async def _sleep_with_countdown(minutes: int, status_template: str, set_status_f
     await set_status_fn(status_template.format(mins=minutes))
 
     while elapsed < total_secs:
-        if await _poll_skip(set_status_fn):
+        if await _poll_skip(set_status_fn, page):
             return True  # skipped early
 
         chunk = min(POLL, total_secs - elapsed)
@@ -156,7 +159,7 @@ async def _sleep_with_idle_scroll(page, minutes: int, status_template: str, set_
     await set_status_fn(status_template.format(mins=minutes))
 
     while elapsed < total_secs:
-        if await _poll_skip(set_status_fn):
+        if await _poll_skip(set_status_fn, page):
             return True  # skipped early
 
         chunk = min(POLL, total_secs - elapsed)

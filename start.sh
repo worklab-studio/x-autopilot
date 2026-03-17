@@ -68,28 +68,6 @@ if command -v open &> /dev/null; then
         open "http://localhost:${API_PORT}"
     fi
 
-    # ── Browser watcher — closing the window stops the agent ──
-    # Runs in background; when browser PID disappears (Cmd+Q or red X),
-    # writes quit_flag so the agent shuts down gracefully.
-    # NOTE: we only trigger if the browser was alive for ≥10 s — this prevents
-    # a false-quit when Chrome is already running and the launcher process
-    # hands off immediately to the existing instance and exits right away.
-    if [ "$BROWSER_OPENED" = true ]; then
-        (
-            WATCH_PID=$(cat "$SCRIPT_DIR/data/browser_pid" 2>/dev/null)
-            START_TIME=$(date +%s)
-            while [ -n "$WATCH_PID" ] && kill -0 "$WATCH_PID" 2>/dev/null; do
-                sleep 1
-            done
-            END_TIME=$(date +%s)
-            ELAPSED=$((END_TIME - START_TIME))
-            # Only trigger quit if browser ran for at least 10 seconds
-            # (avoids false trigger when Chrome hands off to an existing instance)
-            if [ "$ELAPSED" -ge 10 ] && [ ! -f "$SCRIPT_DIR/data/quit_flag" ]; then
-                touch "$SCRIPT_DIR/data/quit_flag"
-            fi
-        ) &
-    fi
 
 elif command -v xdg-open &> /dev/null; then
     xdg-open "http://localhost:${API_PORT}"      # Linux

@@ -1,6 +1,6 @@
 """
 status_overlay.py — Floating status bar overlay for the live browser.
-Includes a Quit button that cleanly shuts down the agent process.
+Includes Quit and Skip Break buttons for live control of the agent.
 """
 
 import yaml
@@ -8,6 +8,7 @@ from pathlib import Path
 
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 QUIT_FLAG_PATH = Path(__file__).parent.parent / "data" / "quit_flag"
+SKIP_BREAK_FLAG_PATH = Path(__file__).parent.parent / "data" / "skip_break_flag"
 _page = None
 
 
@@ -28,14 +29,13 @@ def _overlay_enabled() -> bool:
     return bool(cfg.get("ui", {}).get("status_overlay_enabled", True))
 
 
+# ── Quit flag ────────────────────────────────────────────
 def set_quit_flag():
-    """Write the quit sentinel file so polling loops detect it."""
     QUIT_FLAG_PATH.parent.mkdir(parents=True, exist_ok=True)
     QUIT_FLAG_PATH.touch()
 
 
 def clear_quit_flag():
-    """Remove the quit sentinel at startup so stale flags don't block."""
     try:
         QUIT_FLAG_PATH.unlink(missing_ok=True)
     except Exception:
@@ -43,12 +43,30 @@ def clear_quit_flag():
 
 
 def quit_requested() -> bool:
-    """Return True if the Quit button has been clicked."""
     return QUIT_FLAG_PATH.exists()
 
 
+# ── Skip Break flag ──────────────────────────────────────
+def set_skip_break_flag():
+    SKIP_BREAK_FLAG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    SKIP_BREAK_FLAG_PATH.touch()
+
+
+def clear_skip_break_flag():
+    try:
+        SKIP_BREAK_FLAG_PATH.unlink(missing_ok=True)
+    except Exception:
+        pass
+
+
+def skip_break_requested() -> bool:
+    return SKIP_BREAK_FLAG_PATH.exists()
+
+
+# ── Overlay JS ───────────────────────────────────────────
 _OVERLAY_JS = r"""
 (statusText) => {
+  const API_BASE = "http://localhost:5001";
   const id = "agent-status-overlay";
   let el = document.getElementById(id);
 
@@ -72,13 +90,13 @@ _OVERLAY_JS = r"""
       boxShadow:     "0 2px 12px rgba(0,0,0,0.40)",
       display:       "flex",
       alignItems:    "center",
-      gap:           "10px",
-      maxWidth:      "80%",
+      gap:           "8px",
+      maxWidth:      "84%",
       pointerEvents: "auto",
       userSelect:    "none",
     });
 
-    // Status text span
+    // Status text
     const txt = document.createElement("span");
     txt.id = "agent-status-text";
     Object.assign(txt.style, {
@@ -89,10 +107,49 @@ _OVERLAY_JS = r"""
     });
     el.appendChild(txt);
 
-    // Quit button
-    const btn = document.createElement("button");
-    btn.textContent = "✕ Quit";
-    Object.assign(btn.style, {
+    // ── Skip Break button ──────────────────────────
+    const skipBtn = document.createElement("button");
+    skipBtn.id    = "agent-skip-break-btn";
+    skipBtn.textContent = "⏩ Skip";
+    Object.assign(skipBtn.style, {
+      background:   "rgba(234, 179, 8, 0.80)",
+      color:        "#000",
+      border:       "none",
+      borderRadius: "5px",
+      fontSize:     "11px",
+      fontFamily:   "inherit",
+      fontWeight:   "600",
+      padding:      "3px 9px",
+      cursor:       "pointer",
+      flexShrink:   "0",
+      display:      "none",          // hidden until in a break/sleep
+      transition:   "background 0.15s",
+    });
+    skipBtn.onmouseenter = () => skipBtn.style.background = "rgba(202,138,4,0.95)";
+    skipBtn.onmouseleave = () => skipBtn.style.background = "rgba(234,179,8,0.80)";
+    skipBtn.onclick = () => {
+      skipBtn.textContent = "⏩ Skipping…";
+      skipBtn.disabled = true;
+      window.__agentSkipBreak = true;
+      // POST to the API — this writes the file flag Python polls every 3 s
+      fetch(API_BASE + "/api/agent/skip-break", { method: "POST" })
+        .then(() => {
+          // Status text will update within ~3 s when Python detects the flag
+        })
+        .catch(() => {});
+      // Keep button disabled until status text changes (Python updates it)
+      // Safety reset after 8 s in case something went wrong
+      setTimeout(() => {
+        skipBtn.textContent = "⏩ Skip";
+        skipBtn.disabled = false;
+      }, 8000);
+    };
+    el.appendChild(skipBtn);
+
+    // ── Quit button ────────────────────────────────
+    const quitBtn = document.createElement("button");
+    quitBtn.textContent = "✕ Quit";
+    Object.assign(quitBtn.style, {
       background:   "rgba(220, 38, 38, 0.85)",
       color:        "#fff",
       border:       "none",
@@ -104,23 +161,36 @@ _OVERLAY_JS = r"""
       flexShrink:   "0",
       transition:   "background 0.15s",
     });
-    btn.onmouseenter = () => btn.style.background = "rgba(185,28,28,0.95)";
-    btn.onmouseleave = () => btn.style.background = "rgba(220,38,38,0.85)";
-    btn.onclick = () => {
-      btn.textContent = "Stopping…";
-      btn.disabled = true;
-      // Signal Python via a flag exposed on window
+    quitBtn.onmouseenter = () => quitBtn.style.background = "rgba(185,28,28,0.95)";
+    quitBtn.onmouseleave = () => quitBtn.style.background = "rgba(220,38,38,0.85)";
+    quitBtn.onclick = () => {
+      quitBtn.textContent = "Stopping…";
+      quitBtn.disabled = true;
       window.__agentQuitRequested = true;
-      // Also write quit flag via fetch to the local agent API if available
-      fetch("http://localhost:5000/api/quit", { method: "POST" }).catch(() => {});
+      fetch(API_BASE + "/api/agent/quit", { method: "POST" }).catch(() => {});
     };
-    el.appendChild(btn);
+    el.appendChild(quitBtn);
 
     document.documentElement.appendChild(el);
   }
 
+  // Update status text
   const txt = document.getElementById("agent-status-text");
   if (txt) txt.textContent = statusText;
+
+  // Show/hide Skip button based on whether we're in a break/sleep state
+  const skipBtn = document.getElementById("agent-skip-break-btn");
+  if (skipBtn) {
+    const lower = statusText.toLowerCase();
+    const inBreak = lower.includes("break") || lower.includes("sleep")
+                 || lower.includes("idle") || lower.includes("next session")
+                 || lower.includes("catch-up idle") || lower.includes("min)");
+    skipBtn.style.display = inBreak ? "block" : "none";
+    if (inBreak && skipBtn.textContent !== "Skipping…") {
+      skipBtn.textContent = "⏩ Skip";
+      skipBtn.disabled = false;
+    }
+  }
 }
 """
 
@@ -139,10 +209,6 @@ async def set_status(text: str):
 
 
 async def check_quit_button(page) -> bool:
-    """
-    Poll the in-page window.__agentQuitRequested flag.
-    Returns True if the user clicked Quit in the overlay.
-    """
     try:
         if page is None or page.is_closed():
             return False
@@ -154,3 +220,21 @@ async def check_quit_button(page) -> bool:
         pass
     return quit_requested()
 
+
+async def check_skip_break_button(page) -> bool:
+    """Return True if the Skip Break button was clicked (or flag file exists)."""
+    try:
+        if page is None or page.is_closed():
+            return skip_break_requested()
+        result = await page.evaluate("() => !!window.__agentSkipBreak")
+        if result:
+            # Clear the in-page flag and set the file flag
+            try:
+                await page.evaluate("() => { window.__agentSkipBreak = false; }")
+            except Exception:
+                pass
+            set_skip_break_flag()
+            return True
+    except Exception:
+        pass
+    return skip_break_requested()
