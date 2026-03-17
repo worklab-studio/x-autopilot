@@ -254,6 +254,38 @@ def skip_tweet(tweet_id: int) -> bool:
     return True
 
 
+def get_recent_pillars(days: int = 2) -> list:
+    """Return list of pillars used in the last N days (for rotation logic)."""
+    from datetime import timedelta
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d")
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("""
+        SELECT action_type FROM daily_counts
+        WHERE date >= ? AND action_type LIKE 'tweet_pillar_%' AND count > 0
+    """, (cutoff,))
+    rows = c.fetchall()
+    conn.close()
+    # Strip prefix to get raw pillar name
+    return [r[0].replace("tweet_pillar_", "", 1) for r in rows]
+
+
+def log_tweet_pillar(pillar: str):
+    """Track which pillar was used today (for rotation)."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    action_type = f"tweet_pillar_{pillar}"
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("""
+        INSERT INTO daily_counts (date, action_type, count)
+        VALUES (?, ?, 1)
+        ON CONFLICT(date, action_type)
+        DO UPDATE SET count = count + 1
+    """, (today, action_type))
+    conn.commit()
+    conn.close()
+
+
 def save_growth_snapshot(followers: int, following: int, tweets: int):
     """Save today's follower count for the growth graph."""
     today = datetime.now().strftime("%Y-%m-%d")

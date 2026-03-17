@@ -277,6 +277,7 @@ function TweetCard({
   onApprove,
   onSkip,
   onRegenerate,
+  onPickVariant,
   onMediaUpload,
   onMediaRemove,
   threadIndex,
@@ -286,6 +287,7 @@ function TweetCard({
   const [editedContent, setEditedContent] = useState(tweet.content);
   const [loading, setLoading] = useState(false);
   const [mediaLoading, setMediaLoading] = useState(false);
+  const [variants, setVariants] = useState(null);
   const fileInputRef = useRef(null);
   const charCount = editedContent.length;
   const overLimit = charCount > 280;
@@ -301,10 +303,21 @@ function TweetCard({
   const handleRegenerate = async () => {
     setLoading(true);
     const result = await onRegenerate(tweet.id);
-    if (result?.content) {
+    if (result?.variants) {
+      setVariants(result.variants);
+    } else if (result?.content) {
       setEditedContent(result.content);
     }
     setLoading(false);
+  };
+
+  const handlePickVariant = async (variantText) => {
+    setEditedContent(variantText);
+    setVariants(null);
+    setEditing(true);
+    if (onPickVariant) {
+      await onPickVariant(tweet.id, variantText);
+    }
   };
 
   const scheduledLabel = tweet.scheduled_for
@@ -400,6 +413,56 @@ function TweetCard({
           onClick={() => setEditing(true)}
         >
           {displayContent}
+        </div>
+      )}
+
+      {/* Variant Picker */}
+      {variants && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 9, letterSpacing: 2, color: T.yellow, fontFamily: "'JetBrains Mono', monospace" }}>
+            PICK A VARIANT ↓
+          </div>
+          {variants.map((v, i) => (
+            <div
+              key={i}
+              onClick={() => handlePickVariant(v)}
+              style={{
+                background: "#0d0d0d",
+                border: `1px solid ${T.borderBright}`,
+                padding: "10px 12px",
+                fontSize: 12,
+                color: T.textMid,
+                lineHeight: 1.6,
+                fontFamily: "Georgia, serif",
+                cursor: "pointer",
+                whiteSpace: "pre-wrap",
+                transition: "border-color 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = T.accent}
+              onMouseLeave={e => e.currentTarget.style.borderColor = T.borderBright}
+            >
+              <span style={{ fontSize: 9, color: T.textDim, fontFamily: "'JetBrains Mono', monospace", display: "block", marginBottom: 6 }}>
+                OPTION {i + 1} · {v.length}/280
+              </span>
+              {v}
+            </div>
+          ))}
+          <button
+            onClick={() => setVariants(null)}
+            style={{
+              background: "transparent",
+              border: `1px solid ${T.border}`,
+              color: T.textDim,
+              padding: "6px 10px",
+              fontSize: 9,
+              letterSpacing: 1,
+              cursor: "pointer",
+              fontFamily: "'JetBrains Mono', monospace",
+              alignSelf: "flex-start",
+            }}
+          >
+            CANCEL
+          </button>
         </div>
       )}
 
@@ -563,7 +626,7 @@ function TweetCard({
   );
 }
 
-function ThreadGroup({ group, onApprove, onSkip, onRegenerate, onAddNext, onMediaUpload, onMediaRemove }) {
+function ThreadGroup({ group, onApprove, onSkip, onRegenerate, onPickVariant, onAddNext, onMediaUpload, onMediaRemove }) {
   const tweets = group.tweets || [];
   const total = tweets.length;
   const threadLabel = group.threadId ? "THREAD" : "SINGLE";
@@ -637,6 +700,7 @@ function ThreadGroup({ group, onApprove, onSkip, onRegenerate, onAddNext, onMedi
               onApprove={onApprove}
               onSkip={onSkip}
               onRegenerate={onRegenerate}
+              onPickVariant={onPickVariant}
               onMediaUpload={onMediaUpload}
               onMediaRemove={onMediaRemove}
               threadIndex={tweet.thread_index || index + 1}
@@ -649,22 +713,27 @@ function ThreadGroup({ group, onApprove, onSkip, onRegenerate, onAddNext, onMedi
   );
 }
 
+const MOCK_GROWTH = [
+  { date: "2026-02-28", followers: 312 },
+  { date: "2026-03-01", followers: 319 },
+  { date: "2026-03-02", followers: 331 },
+  { date: "2026-03-03", followers: 340 },
+  { date: "2026-03-04", followers: 355 },
+  { date: "2026-03-05", followers: 362 },
+  { date: "2026-03-06", followers: 378 },
+  { date: "2026-03-07", followers: 391 },
+  { date: "2026-03-08", followers: 407 },
+  { date: "2026-03-09", followers: 423 },
+  { date: "2026-03-10", followers: 438 },
+  { date: "2026-03-11", followers: 461 },
+  { date: "2026-03-12", followers: 479 },
+  { date: "2026-03-13", followers: 498 },
+  { date: "2026-03-14", followers: 512 },
+];
+
 function GrowthChart({ data }) {
-  if (!data || data.length === 0) {
-    return (
-      <div style={{
-        height: 200,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        color: T.textDim,
-        fontSize: 12,
-        fontFamily: "'JetBrains Mono', monospace",
-      }}>
-        Growth data will appear after first full day
-      </div>
-    );
-  }
+  const isMock = !data || data.length === 0;
+  const chartData = isMock ? MOCK_GROWTH : data;
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload?.length) {
@@ -685,8 +754,26 @@ function GrowthChart({ data }) {
   };
 
   return (
+    <div style={{ position: "relative" }}>
+      {isMock && (
+        <div style={{
+          position: "absolute",
+          top: 6,
+          right: 6,
+          zIndex: 10,
+          background: T.surface,
+          border: `1px solid ${T.border}`,
+          color: T.textDim,
+          fontSize: 9,
+          fontFamily: "'JetBrains Mono', monospace",
+          padding: "2px 7px",
+          letterSpacing: "0.08em",
+        }}>
+          SAMPLE DATA
+        </div>
+      )}
     <ResponsiveContainer width="100%" height={200}>
-      <AreaChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+      <AreaChart data={chartData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
         <defs>
           <linearGradient id="followersGradient" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%" stopColor={T.accent} stopOpacity={0.3} />
@@ -716,6 +803,7 @@ function GrowthChart({ data }) {
         />
       </AreaChart>
     </ResponsiveContainer>
+    </div>
   );
 }
 
@@ -960,6 +1048,56 @@ function SettingsToggle({ label, checked, onChange }) {
   );
 }
 
+function SettingsPassword({ label, value, onChange, placeholder }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <label style={{
+        fontSize: 10,
+        color: T.textMid,
+        letterSpacing: 2,
+        fontFamily: "'JetBrains Mono', monospace",
+      }}>
+        {label}
+      </label>
+      <div style={{ display: "flex" }}>
+        <input
+          type={show ? "text" : "password"}
+          value={value || ""}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{
+            flex: 1,
+            background: T.bg,
+            border: `1px solid ${T.border}`,
+            borderRight: "none",
+            color: T.text,
+            padding: "8px 12px",
+            fontSize: 11,
+            fontFamily: "'JetBrains Mono', monospace",
+            outline: "none",
+          }}
+        />
+        <button
+          onClick={() => setShow(s => !s)}
+          style={{
+            background: T.surface,
+            border: `1px solid ${T.border}`,
+            color: T.textMid,
+            padding: "8px 14px",
+            fontSize: 10,
+            letterSpacing: 1,
+            cursor: "pointer",
+            fontFamily: "'JetBrains Mono', monospace",
+          }}
+        >
+          {show ? "HIDE" : "SHOW"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN APP ────────────────────────────────────────
 export default function App() {
   const [actions, setActions] = useState([]);
@@ -992,9 +1130,30 @@ export default function App() {
   const [configSaving, setConfigSaving] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
   const [configError, setConfigError] = useState("");
+  const [credentials, setCredentials] = useState({ twitter_username: "", anthropic_api_key: "", openai_api_key: "" });
+  const [credSaving, setCredSaving] = useState(false);
+  const [credSaved, setCredSaved] = useState(false);
+  const [credError, setCredError] = useState("");
+
+  // Tweet ideas inbox
+  const [ideas, setIdeas] = useState([]);
+  const [newIdea, setNewIdea] = useState("");
+  const [ideaAdding, setIdeaAdding] = useState(false);
+
+  // Custom prompt generation
+  const [promptInput, setPromptInput] = useState("");
+  const [promptFormat, setPromptFormat] = useState("tweet");
+  const [promptLoading, setPromptLoading] = useState(false);
+  const [promptStatus, setPromptStatus] = useState("");
+
+  // Thread hook optimizer
+  const [hookTopic, setHookTopic] = useState("");
+  const [hooks, setHooks] = useState([]);
+  const [hooksLoading, setHooksLoading] = useState(false);
+  const [selectedHook, setSelectedHook] = useState(null);
 
   const fetchAll = useCallback(async () => {
-    const [a, q, s, g, state, t, v, targ, tags, promos] = await Promise.all([
+    const [a, q, s, g, state, t, v, targ, tags, promos, ideasRes] = await Promise.all([
       api.get("/actions?limit=60"),
       api.get("/queue"),
       api.get(`/stats?range=${statsRange}`),
@@ -1005,6 +1164,7 @@ export default function App() {
       api.get("/targets"),
       api.get("/hashtags"),
       api.get("/promotions"),
+      api.get("/ideas"),
     ]);
     if (a) setActions(a);
     if (q) setQueue(q);
@@ -1016,6 +1176,7 @@ export default function App() {
     if (targ) setTargets(targ);
     if (tags?.hashtags) setHashtags(tags.hashtags);
     if (promos?.promotions) setPromotions(promos.promotions);
+    if (ideasRes?.ideas) setIdeas(ideasRes.ideas);
     setLastUpdate(new Date().toLocaleTimeString());
   }, [voiceProfile, statsRange]);
 
@@ -1037,6 +1198,32 @@ export default function App() {
     loadConfig();
   }, []);
 
+  useEffect(() => {
+    const loadCredentials = async () => {
+      const creds = await api.get("/credentials");
+      if (creds) setCredentials({
+        twitter_username: creds.twitter_username || "",
+        anthropic_api_key: creds.anthropic_api_key || "",
+        openai_api_key: creds.openai_api_key || "",
+      });
+    };
+    loadCredentials();
+  }, []);
+
+  const handleSaveCredentials = async () => {
+    setCredSaving(true);
+    setCredSaved(false);
+    setCredError("");
+    const result = await api.post("/credentials", credentials);
+    setCredSaving(false);
+    if (result?.success) {
+      setCredSaved(true);
+      setTimeout(() => setCredSaved(false), 2500);
+    } else {
+      setCredError(result?.error || "Failed to save");
+    }
+  };
+
   const handleApprove = async (id, content) => {
     await api.post(`/queue/${id}/approve`, content ? { content } : null);
     fetchAll();
@@ -1049,8 +1236,70 @@ export default function App() {
 
   const handleRegenerate = async (id) => {
     const result = await api.post(`/queue/${id}/regenerate`);
-    fetchAll();
+    // Don't fetchAll here — variants are shown in-card; queue refreshes after pick
     return result;
+  };
+
+  const handlePickVariant = async (tweetId, content) => {
+    await api.post(`/queue/${tweetId}/pick-variant`, { content });
+    fetchAll();
+  };
+
+  const handleAddIdea = async () => {
+    const idea = newIdea.trim();
+    if (!idea) return;
+    setIdeaAdding(true);
+    await api.post("/ideas", { idea });
+    setNewIdea("");
+    const res = await api.get("/ideas");
+    if (res?.ideas) setIdeas(res.ideas);
+    setIdeaAdding(false);
+  };
+
+  const handleGenerateFromPrompt = async () => {
+    const prompt = promptInput.trim();
+    if (!prompt) return;
+    setPromptLoading(true);
+    setPromptStatus("");
+    const result = await api.post("/generate/prompt", { prompt, format: promptFormat });
+    if (result?.success) {
+      setPromptInput("");
+      setPromptStatus(promptFormat === "thread" ? `Thread queued (${result.tweets?.length || 0} tweets)` : "Tweet added to queue");
+      fetchAll();
+      setTimeout(() => setPromptStatus(""), 4000);
+    } else {
+      setPromptStatus("Error: " + (result?.error || "generation failed"));
+    }
+    setPromptLoading(false);
+  };
+
+  const handleFetchHooks = async () => {
+    const topic = hookTopic.trim() || threadTopic.trim();
+    if (!topic) return;
+    setHooksLoading(true);
+    setHooks([]);
+    setSelectedHook(null);
+    const result = await api.get(`/thread/hooks?topic=${encodeURIComponent(topic)}`);
+    if (result?.hooks) setHooks(result.hooks);
+    setHooksLoading(false);
+  };
+
+  const handleGenerateThreadWithHook = async () => {
+    setThreadLoading(true);
+    setThreadStatus("");
+    setThreadError("");
+    const topic = (hookTopic || threadTopic).trim();
+    const result = await api.post("/thread", selectedHook ? { topic, hook: selectedHook } : (topic ? { topic } : null));
+    if (result?.success) {
+      setThreadStatus(`Queued ${result.count} tweets`);
+      setHooks([]);
+      setSelectedHook(null);
+      setHookTopic("");
+      fetchAll();
+    } else {
+      setThreadError(result?.error || "Failed to generate thread");
+    }
+    setThreadLoading(false);
   };
 
   const handlePause = async () => {
@@ -1474,16 +1723,18 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Thread generator */}
+                {/* Thread generator with hook optimizer */}
                 <div style={{ background: T.surface, border: `1px solid ${T.border}`, padding: 20 }}>
                   <div style={{ fontSize: 10, letterSpacing: 3, color: T.textMid, marginBottom: 16 }}>
                     THREAD GENERATOR
                   </div>
+
+                  {/* Topic input */}
                   <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
                     <input
-                      value={threadTopic}
-                      onChange={e => setThreadTopic(e.target.value)}
-                      placeholder="Optional topic (leave blank for auto)"
+                      value={hookTopic || threadTopic}
+                      onChange={e => { setHookTopic(e.target.value); setThreadTopic(e.target.value); setHooks([]); setSelectedHook(null); }}
+                      placeholder="Thread topic (required for hook optimizer)"
                       style={{
                         flex: "1 1 240px",
                         background: "#0d0d0d",
@@ -1496,7 +1747,24 @@ export default function App() {
                       }}
                     />
                     <button
-                      onClick={handleGenerateThread}
+                      onClick={handleFetchHooks}
+                      disabled={hooksLoading || !hookTopic.trim()}
+                      style={{
+                        background: "transparent",
+                        border: `1px solid ${T.yellow}`,
+                        color: T.yellow,
+                        padding: "7px 14px",
+                        fontSize: 10,
+                        letterSpacing: 2,
+                        cursor: hooksLoading || !hookTopic.trim() ? "not-allowed" : "pointer",
+                        fontFamily: "'JetBrains Mono', monospace",
+                        opacity: hooksLoading || !hookTopic.trim() ? 0.5 : 1,
+                      }}
+                    >
+                      {hooksLoading ? "LOADING..." : "⚡ PICK HOOK"}
+                    </button>
+                    <button
+                      onClick={handleGenerateThreadWithHook}
                       disabled={threadLoading}
                       style={{
                         background: "transparent",
@@ -1512,6 +1780,43 @@ export default function App() {
                       {threadLoading ? "GENERATING..." : "GENERATE THREAD"}
                     </button>
                   </div>
+
+                  {/* Hook picker */}
+                  {hooks.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+                      <div style={{ fontSize: 9, letterSpacing: 2, color: T.yellow, fontFamily: "'JetBrains Mono', monospace" }}>
+                        PICK A HOOK — thread builds around your choice
+                      </div>
+                      {hooks.map((hook, i) => (
+                        <div
+                          key={i}
+                          onClick={() => setSelectedHook(selectedHook === hook ? null : hook)}
+                          style={{
+                            padding: "10px 12px",
+                            background: selectedHook === hook ? "#1a1a0a" : "#0d0d0d",
+                            border: `1px solid ${selectedHook === hook ? T.yellow : T.borderBright}`,
+                            color: selectedHook === hook ? T.text : T.textMid,
+                            fontSize: 12,
+                            fontFamily: "Georgia, serif",
+                            lineHeight: 1.6,
+                            cursor: "pointer",
+                            transition: "border-color 0.15s",
+                          }}
+                        >
+                          <span style={{ fontSize: 9, color: selectedHook === hook ? T.yellow : T.textDim, fontFamily: "'JetBrains Mono', monospace", display: "block", marginBottom: 4 }}>
+                            HOOK {i + 1} {selectedHook === hook ? "✓ SELECTED" : ""}
+                          </span>
+                          {hook}
+                        </div>
+                      ))}
+                      {selectedHook && (
+                        <div style={{ fontSize: 10, color: T.accent, fontFamily: "'JetBrains Mono', monospace" }}>
+                          ✓ Hook selected — click GENERATE THREAD to build around it
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {threadStatus && (
                     <div style={{ fontSize: 11, color: T.accent, paddingTop: 6 }}>
                       {threadStatus}
@@ -1794,6 +2099,59 @@ export default function App() {
                   <div style={{ fontSize: 11, color: T.textDim }}>Loading settings...</div>
                 ) : (
                   <>
+                    <SettingsSection title="ACCOUNT & API KEYS">
+                      <SettingsInput
+                        label="Twitter Username (without @)"
+                        value={credentials.twitter_username}
+                        onChange={(v) => setCredentials(c => ({ ...c, twitter_username: v }))}
+                        placeholder="yourhandle"
+                      />
+                      <SettingsPassword
+                        label="Anthropic API Key"
+                        value={credentials.anthropic_api_key}
+                        onChange={(v) => setCredentials(c => ({ ...c, anthropic_api_key: v }))}
+                        placeholder="sk-ant-..."
+                      />
+                      <SettingsPassword
+                        label="OpenAI API Key (fallback)"
+                        value={credentials.openai_api_key}
+                        onChange={(v) => setCredentials(c => ({ ...c, openai_api_key: v }))}
+                        placeholder="sk-..."
+                      />
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
+                        <button
+                          onClick={handleSaveCredentials}
+                          disabled={credSaving}
+                          style={{
+                            background: "transparent",
+                            border: `1px solid ${T.accent}`,
+                            color: T.accent,
+                            padding: "8px 20px",
+                            fontSize: 11,
+                            letterSpacing: 2,
+                            cursor: credSaving ? "not-allowed" : "pointer",
+                            fontFamily: "'JetBrains Mono', monospace",
+                            opacity: credSaving ? 0.5 : 1,
+                          }}
+                        >
+                          {credSaving ? "SAVING..." : "SAVE CREDENTIALS"}
+                        </button>
+                        {credSaved && (
+                          <span style={{ fontSize: 10, color: T.accent, letterSpacing: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+                            SAVED
+                          </span>
+                        )}
+                        {credError && (
+                          <span style={{ fontSize: 10, color: T.red, letterSpacing: 1, fontFamily: "'JetBrains Mono', monospace" }}>
+                            {credError}
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 10, color: T.textDim, fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.6 }}>
+                        Keys are saved to your local .env file. Leave a field blank to keep the existing value.
+                      </div>
+                    </SettingsSection>
+
                     <SettingsSection title="VOICE SETTINGS">
                       <SettingsInput
                         label="Niche"
@@ -2244,9 +2602,143 @@ export default function App() {
               </div>
             ) : (
               <div style={{ flex: 1, overflowY: "auto", padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+
+                {/* ── Write from Prompt ── */}
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, padding: 16 }}>
+                  <div style={{ fontSize: 10, letterSpacing: 3, color: T.textMid, marginBottom: 12 }}>
+                    ✍️ WRITE FROM PROMPT
+                  </div>
+                  <textarea
+                    value={promptInput}
+                    onChange={e => setPromptInput(e.target.value)}
+                    placeholder="What do you want to post about? e.g. Why most SaaS products fail at onboarding"
+                    rows={2}
+                    style={{
+                      width: "100%",
+                      background: "#0d0d0d",
+                      border: `1px solid ${T.borderBright}`,
+                      color: T.text,
+                      padding: "10px 12px",
+                      fontSize: 12,
+                      fontFamily: "Georgia, serif",
+                      resize: "vertical",
+                      outline: "none",
+                      marginBottom: 8,
+                    }}
+                  />
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                    {["tweet", "thread"].map(fmt => (
+                      <button
+                        key={fmt}
+                        onClick={() => setPromptFormat(fmt)}
+                        style={{
+                          background: promptFormat === fmt ? T.accentMid : "transparent",
+                          border: `1px solid ${promptFormat === fmt ? T.accent : T.borderBright}`,
+                          color: promptFormat === fmt ? T.accent : T.textMid,
+                          padding: "6px 14px",
+                          fontSize: 9,
+                          letterSpacing: 2,
+                          cursor: "pointer",
+                          fontFamily: "'JetBrains Mono', monospace",
+                        }}
+                      >
+                        {fmt.toUpperCase()}
+                      </button>
+                    ))}
+                    <button
+                      onClick={handleGenerateFromPrompt}
+                      disabled={promptLoading || !promptInput.trim()}
+                      style={{
+                        background: "transparent",
+                        border: `1px solid ${T.accent}`,
+                        color: T.accent,
+                        padding: "6px 16px",
+                        fontSize: 9,
+                        letterSpacing: 2,
+                        cursor: promptLoading || !promptInput.trim() ? "not-allowed" : "pointer",
+                        fontFamily: "'JetBrains Mono', monospace",
+                        opacity: promptLoading || !promptInput.trim() ? 0.5 : 1,
+                        marginLeft: "auto",
+                      }}
+                    >
+                      {promptLoading ? "GENERATING..." : "GENERATE →"}
+                    </button>
+                  </div>
+                  {promptStatus && (
+                    <div style={{ fontSize: 10, color: promptStatus.startsWith("Error") ? T.red : T.accent, marginTop: 8, fontFamily: "'JetBrains Mono', monospace" }}>
+                      {promptStatus}
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Tweet Ideas Inbox ── */}
+                <div style={{ background: T.surface, border: `1px solid ${T.border}`, padding: 16 }}>
+                  <div style={{ fontSize: 10, letterSpacing: 3, color: T.textMid, marginBottom: 12 }}>
+                    💡 IDEAS INBOX {ideas.length > 0 && <span style={{ color: T.yellow }}>({ideas.length})</span>}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: ideas.length > 0 ? 10 : 0 }}>
+                    <input
+                      value={newIdea}
+                      onChange={e => setNewIdea(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") handleAddIdea(); }}
+                      placeholder="Add idea (agent uses oldest first)"
+                      style={{
+                        flex: 1,
+                        background: "#0d0d0d",
+                        border: `1px solid ${T.borderBright}`,
+                        color: T.text,
+                        padding: "8px 12px",
+                        fontSize: 11,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        outline: "none",
+                      }}
+                    />
+                    <button
+                      onClick={handleAddIdea}
+                      disabled={ideaAdding || !newIdea.trim()}
+                      style={{
+                        background: "transparent",
+                        border: `1px solid ${T.borderBright}`,
+                        color: T.textMid,
+                        padding: "8px 14px",
+                        fontSize: 9,
+                        letterSpacing: 2,
+                        cursor: ideaAdding || !newIdea.trim() ? "not-allowed" : "pointer",
+                        fontFamily: "'JetBrains Mono', monospace",
+                        opacity: ideaAdding || !newIdea.trim() ? 0.5 : 1,
+                      }}
+                    >
+                      ADD
+                    </button>
+                  </div>
+                  {ideas.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {ideas.map((idea, i) => (
+                        <div key={i} style={{
+                          fontSize: 11,
+                          color: T.textMid,
+                          fontFamily: "Georgia, serif",
+                          padding: "6px 10px",
+                          background: "#0d0d0d",
+                          border: `1px solid ${T.border}`,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}>
+                          <span style={{ fontSize: 9, color: T.textDim, fontFamily: "'JetBrains Mono', monospace", minWidth: 20 }}>
+                            {i === 0 ? "NEXT" : `+${i}`}
+                          </span>
+                          {idea}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Tweet queue ── */}
                 {queue.length === 0 ? (
                   <div style={{
-                    padding: "60px 20px",
+                    padding: "40px 20px",
                     textAlign: "center",
                     color: T.textDim,
                     fontSize: 12,
@@ -2265,6 +2757,7 @@ export default function App() {
                       onApprove={handleApprove}
                       onSkip={handleSkip}
                       onRegenerate={handleRegenerate}
+                      onPickVariant={handlePickVariant}
                       onAddNext={handleAddThreadNext}
                       onMediaUpload={handleMediaUpload}
                       onMediaRemove={handleMediaRemove}

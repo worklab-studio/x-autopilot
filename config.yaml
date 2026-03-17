@@ -26,10 +26,10 @@ autonomy_mode:
 ui:
   status_overlay_enabled: true
 engagement:
-  daily_replies: 20
+  daily_replies: 40
   daily_follows: 10
   daily_dms: 4
-  daily_likes: 30
+  daily_likes: 45
   daily_retweets: 2
   min_delay_seconds: 15
   max_delay_seconds: 90
@@ -60,21 +60,7 @@ tiers:
     behavior: visibility
     comment_tone: "sharp, specific, insightful \u2014 reply within 15 mins of post"
     dm_after_engagement: false
-target_accounts:
-- levelsio
-- marc_louvion
-- arvidkahl
-- tdinh_me
-- dannypostmaa
-- jdnoc
-- steveschoger
-- brianlovin
-- joulee
-- gregisenberg
-- heyblake
-- thepatwalls
-- venturetwins
-- aleyda
+target_accounts: []
 targets:
   auto_add_enabled: true
   auto_add_max_per_day: 6
@@ -195,11 +181,47 @@ reply_strategy:
   question_end_block_threshold: 2
 promotions:
   mentions_per_day: 0
+  # Subtle product mentions woven into normal replies when the topic is relevant
+  product_reply_enabled: true
+  product_reply_max_per_day: 2
+  products:
+    - name: Dodo Invoice
+      url: https://dodoinvoice.com
+      description: invoicing tool for freelancers and indie hackers
+      trigger_keywords:
+        - invoice
+        - invoicing
+        - billing
+        - send invoice
+        - client billing
+        - freelance billing
+        - payment request
+        - getting paid
+        - collect payment
+        - unpaid invoice
+        - invoice software
+        - invoice tool
+    - name: Iconstack
+      url: https://iconstack.io
+      description: icon library for designers and builders
+      trigger_keywords:
+        - icons
+        - icon pack
+        - icon set
+        - ui icons
+        - icon library
+        - icon resource
+        - icon component
+        - svg icons
+        - design assets
+        - icon system
 vision:
   enabled: true
   model: claude-3-5-sonnet-20241022
   max_images_per_tweet: 2
   max_image_bytes: 2000000
+turbo_mode: false
+
 safety:
   max_actions_per_hour: 12
   pause_between_sessions_minutes: 60

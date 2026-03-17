@@ -11,13 +11,14 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 import sqlite3
 import json
 import random
 import uuid
 import yaml
+from dotenv import dotenv_values, set_key
 
 # Import logger functions
 from agent.logger import (
@@ -36,7 +37,11 @@ from agent.targets import load_targets, add_target, remove_target
 from agent.hashtags import load_hashtags, add_hashtag, remove_hashtag
 from agent.promotions import load_promotions, add_promotion, remove_promotion
 
-app = Flask(__name__)
+app = Flask(
+    __name__,
+    static_folder=str(Path(__file__).parent / "build" / "static"),
+    static_url_path="/static",
+)
 CORS(app)
 
 # Agent state file — dashboard writes this, agent reads it
@@ -44,6 +49,8 @@ AGENT_STATE_FILE = Path(__file__).parent.parent / "data" / "agent_state.json"
 MEDIA_DIR = Path(__file__).parent.parent / "data" / "media"
 MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
+ENV_PATH = Path(__file__).parent.parent / ".env"
+BUILD_DIR = Path(__file__).parent / "build"
 
 ALLOWED_MEDIA_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".mov"}
 CONFIG_ALLOWLIST = {
@@ -358,11 +365,10 @@ def skip(tweet_id):
 
 @app.route("/api/queue/<int:tweet_id>/regenerate", methods=["POST"])
 def regenerate(tweet_id):
-    """Regenerate a tweet — deletes old draft, creates new one."""
+    """Regenerate a tweet — returns 3 variants for the user to pick from."""
     try:
-        from ai.tweet_writer import generate_tweet
+        from ai.tweet_writer import generate_tweet_variants
 
-        # Get the original tweet type from metadata if available
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         c.execute("SELECT content, thread_id, thread_index, media_path, media_type FROM tweet_queue WHERE id = ?", (tweet_id,))
@@ -371,20 +377,40 @@ def regenerate(tweet_id):
         if not row:
             return jsonify({"success": False, "error": "Tweet not found"}), 404
 
-        # Skip the old one
+        # Generate 3 variants without touching the queue yet
+        variants = generate_tweet_variants(n=3, tweet_type="auto")
+
+        return jsonify({"success": True, "tweet_id": tweet_id, "variants": variants})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/queue/<int:tweet_id>/pick-variant", methods=["POST"])
+def pick_variant(tweet_id):
+    """User picked a variant — skip old tweet, create new one with chosen content."""
+    try:
+        data = request.get_json() or {}
+        content = data.get("content", "").strip()
+        if not content:
+            return jsonify({"success": False, "error": "No content provided"}), 400
+
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT thread_id, thread_index, media_path, media_type FROM tweet_queue WHERE id = ?", (tweet_id,))
+        row = c.fetchone()
+        conn.close()
+        if not row:
+            return jsonify({"success": False, "error": "Tweet not found"}), 404
+
         skip_tweet(tweet_id)
-
-        # Generate a fresh one
-        new_content = generate_tweet(tweet_type="auto")
         new_id = add_to_tweet_queue(
-            content=new_content,
-            thread_id=row[1],
-            thread_index=row[2],
-            media_path=row[3],
-            media_type=row[4]
+            content=content,
+            thread_id=row[0],
+            thread_index=row[1],
+            media_path=row[2],
+            media_type=row[3]
         )
-
-        return jsonify({"success": True, "new_id": new_id, "content": new_content})
+        return jsonify({"success": True, "new_id": new_id, "content": content})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
@@ -516,6 +542,15 @@ def quit_agent():
     return jsonify({"success": True, "message": "Agent shutdown initiated"})
 
 
+@app.route("/api/agent/skip-break", methods=["POST"])
+def skip_break():
+    """Write the skip-break sentinel so the scheduler exits its current sleep immediately."""
+    skip_flag = Path(__file__).parent.parent / "data" / "skip_break_flag"
+    skip_flag.parent.mkdir(parents=True, exist_ok=True)
+    skip_flag.touch()
+    return jsonify({"success": True, "message": "Skip break signal sent"})
+
+
 
 
 @app.route("/api/voice-profile")
@@ -645,6 +680,7 @@ def generate_thread():
 
         data = request.get_json(silent=True) or {}
         topic = data.get("topic")
+        hook = data.get("hook")  # Optional: user-selected hook from hook optimizer
         num_tweets = data.get("num_tweets", 5)
         try:
             num_tweets = int(num_tweets)
@@ -660,6 +696,10 @@ def generate_thread():
             topic = random.choice(topics)
 
         tweets = _generate_thread(topic=topic, num_tweets=num_tweets)
+
+        # If user picked a hook, replace tweet[0] with it
+        if hook and isinstance(hook, str) and hook.strip():
+            tweets[0] = hook.strip()
         thread_id = uuid.uuid4().hex
         tweet_ids = []
         for i, tweet in enumerate(tweets):
@@ -753,9 +793,177 @@ def health():
     return jsonify({"status": "ok"})
 
 
+@app.route("/api/credentials")
+def get_credentials():
+    vals = dotenv_values(ENV_PATH) if ENV_PATH.exists() else {}
+    return jsonify({
+        "twitter_username": vals.get("TWITTER_USERNAME", ""),
+        "anthropic_api_key": vals.get("ANTHROPIC_API_KEY", ""),
+        "openai_api_key": vals.get("OPENAI_API_KEY", ""),
+    })
+
+
+@app.route("/api/credentials", methods=["POST"])
+def save_credentials():
+    data = request.get_json(silent=True) or {}
+    twitter_username = (data.get("twitter_username") or "").strip()
+    anthropic_key = (data.get("anthropic_api_key") or "").strip()
+    openai_key = (data.get("openai_api_key") or "").strip()
+
+    # Ensure .env file exists
+    if not ENV_PATH.exists():
+        ENV_PATH.write_text("")
+
+    updated = []
+
+    if twitter_username:
+        set_key(ENV_PATH, "TWITTER_USERNAME", twitter_username)
+        os.environ["TWITTER_USERNAME"] = twitter_username
+        updated.append("twitter_username")
+
+    if anthropic_key:
+        set_key(ENV_PATH, "ANTHROPIC_API_KEY", anthropic_key)
+        os.environ["ANTHROPIC_API_KEY"] = anthropic_key
+        updated.append("anthropic_api_key")
+
+    if openai_key:
+        set_key(ENV_PATH, "OPENAI_API_KEY", openai_key)
+        os.environ["OPENAI_API_KEY"] = openai_key
+        updated.append("openai_api_key")
+
+    # Auto-set LLM_PROVIDER based on what's now available
+    has_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())
+    has_openai = bool(os.environ.get("OPENAI_API_KEY", "").strip())
+    if has_anthropic and has_openai:
+        provider = "auto"
+    elif has_anthropic:
+        provider = "anthropic"
+    elif has_openai:
+        provider = "openai"
+    else:
+        provider = "auto"
+    set_key(ENV_PATH, "LLM_PROVIDER", provider)
+    os.environ["LLM_PROVIDER"] = provider
+
+    # Reset cached LLM clients so the new keys take effect immediately
+    try:
+        import ai.llm_client as llm
+        llm._ANTHROPIC_CLIENT = None
+        llm._OPENAI_CLIENT = None
+    except Exception:
+        pass
+
+    return jsonify({"success": True, "updated": updated})
+
+
+# ─── TWEET IDEAS INBOX ────────────────────────────────
+
+@app.route("/api/ideas")
+def get_ideas():
+    """Return all unused ideas from tweet_ideas.txt."""
+    try:
+        from ai.tweet_writer import get_ideas_list
+        ideas = get_ideas_list()
+        return jsonify({"ideas": ideas})
+    except Exception as e:
+        return jsonify({"ideas": [], "error": str(e)})
+
+
+@app.route("/api/ideas", methods=["POST"])
+def post_idea():
+    """Add a new idea to tweet_ideas.txt."""
+    try:
+        from ai.tweet_writer import add_idea
+        data = request.get_json() or {}
+        idea = (data.get("idea") or "").strip()
+        if not idea:
+            return jsonify({"success": False, "error": "Empty idea"}), 400
+        add_idea(idea)
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ─── CUSTOM PROMPT GENERATION ─────────────────────────
+
+@app.route("/api/generate/prompt", methods=["POST"])
+def generate_from_user_prompt():
+    """Generate a tweet or thread from a user-supplied prompt and add to queue."""
+    try:
+        from ai.tweet_writer import generate_from_prompt
+        data = request.get_json() or {}
+        prompt = (data.get("prompt") or "").strip()
+        fmt = (data.get("format") or "tweet").strip().lower()
+        if not prompt:
+            return jsonify({"success": False, "error": "No prompt provided"}), 400
+        if fmt not in ("tweet", "thread"):
+            fmt = "tweet"
+
+        result = generate_from_prompt(prompt=prompt, format=fmt)
+
+        if fmt == "thread" and isinstance(result, list):
+            thread_id = uuid.uuid4().hex
+            ids = []
+            for i, tweet_text in enumerate(result):
+                tid = add_to_tweet_queue(
+                    content=tweet_text,
+                    thread_id=thread_id,
+                    thread_index=i + 1
+                )
+                ids.append(tid)
+            return jsonify({"success": True, "format": "thread", "thread_id": thread_id, "ids": ids, "tweets": result})
+        else:
+            tweet_id = add_to_tweet_queue(content=str(result))
+            return jsonify({"success": True, "format": "tweet", "id": tweet_id, "content": str(result)})
+
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ─── THREAD HOOK OPTIMIZER ────────────────────────────
+
+@app.route("/api/thread/hooks")
+def get_thread_hooks():
+    """Generate 3 hook options for the first tweet of a thread on a given topic."""
+    try:
+        from ai.tweet_writer import generate_thread_hooks
+        topic = request.args.get("topic", "").strip()
+        if not topic:
+            return jsonify({"success": False, "error": "No topic provided"}), 400
+        hooks = generate_thread_hooks(topic=topic, n=3)
+        return jsonify({"success": True, "topic": topic, "hooks": hooks})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+# ─── SERVE REACT BUILD ────────────────────────────────
+# Serves the pre-built React UI from dashboard/build/
+# This means buyers only need Python to run — no Node.js at runtime.
+
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_react(path):
+    # Don't intercept API calls
+    if path.startswith("api/"):
+        return jsonify({"error": "Not found"}), 404
+    # Serve static assets (JS, CSS, images)
+    static_file = BUILD_DIR / path
+    if path and static_file.exists():
+        return send_from_directory(BUILD_DIR, path)
+    # Everything else → index.html (React handles routing)
+    index = BUILD_DIR / "index.html"
+    if index.exists():
+        return send_from_directory(BUILD_DIR, "index.html")
+    return (
+        "<h2>Dashboard UI not built yet.</h2>"
+        "<p>Run <code>npm --prefix dashboard run build</code> to build it.</p>",
+        404,
+    )
+
+
 if __name__ == "__main__":
     init_db()
-    port = int(os.getenv("DASHBOARD_API_PORT", "5000"))
-    print(f"\n🖥  Dashboard API running at http://localhost:{port}")
-    print("   Open http://localhost:3000 for the dashboard UI\n")
+    port = int(os.getenv("DASHBOARD_API_PORT", "5001"))
+    print(f"\n🖥  Dashboard running at http://localhost:{port}")
+    print(f"   API + UI both on the same port — no Node.js needed!\n")
     app.run(port=port, debug=False)

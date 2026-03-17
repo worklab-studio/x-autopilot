@@ -37,13 +37,20 @@ def _clear_chrome_profile():
 async def is_logged_in(page) -> bool:
     """Check if we're currently logged in to Twitter."""
     try:
-        await page.goto(TWITTER_HOME, wait_until="domcontentloaded", timeout=20000)
-        # Always use a fixed 3s wait here — turbo mode shrinks human_delay
-        # but login detection needs real page load time regardless of mode
-        await asyncio.sleep(3)
+        current_url = page.url or ""
+        already_on_home = "x.com/home" in current_url or "twitter.com/home" in current_url
+
+        if not already_on_home:
+            await page.goto(TWITTER_HOME, wait_until="domcontentloaded", timeout=20000)
+            # Always use a fixed 3s wait here — turbo mode shrinks human_delay
+            # but login detection needs real page load time regardless of mode
+            await asyncio.sleep(3)
+            current_url = page.url
+        else:
+            # Already on home — just give React a moment to settle
+            await asyncio.sleep(2)
 
         # If we're redirected to login page, we're not logged in
-        current_url = page.url
         if "login" in current_url or "i/flow" in current_url:
             return False
 
@@ -62,6 +69,11 @@ async def is_logged_in(page) -> bool:
                     print("⚠️  Browser stuck on X loading screen — Chrome profile is likely corrupted.")
                     print("   Clearing profile so the next run starts with a clean browser...")
                     _clear_chrome_profile()
+                    # Navigate away to break the JS loop so subsequent gotos work
+                    try:
+                        await page.goto("about:blank", wait_until="domcontentloaded", timeout=5000)
+                    except Exception:
+                        pass
             except Exception:
                 pass
             return False
@@ -147,6 +159,14 @@ async def ensure_logged_in(browser, page) -> bool:
     Main function — call this before any action.
     Automatically handles login or session restore.
     """
+    # Clear Chrome's session restore — navigate to blank to break any stuck state
+    # (Chrome may have restored x.com/home from last session, causing a React hydration loop)
+    try:
+        await page.goto("about:blank", wait_until="domcontentloaded", timeout=8000)
+        await asyncio.sleep(0.5)
+    except Exception:
+        pass
+
     # Try loading saved session first
     session_loaded = await load_session(browser)
 

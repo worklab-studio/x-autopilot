@@ -862,8 +862,19 @@ tr:hover td{background:rgba(255,255,255,.015);}
         <td><span class="pill" style="color:var(--text-mid);border-color:var(--border2);">2 / day</span></td>
         <td>High-scoring relevant tweets only</td>
       </tr>
+      <tr>
+        <td><span class="act-badge p-accent" style="border-color:rgba(0,255,136,.3);">⊛ PRODUCT</span></td>
+        <td>When a tweet's topic matches your product's keywords (e.g. "invoicing", "icon pack"), the reply weaves in a natural product mention — value add first, then a conversational "I built something for this" with your URL.</td>
+        <td><span class="pill p-green">2 / day</span></td>
+        <td>Keyword match on tweet text vs. product trigger list</td>
+      </tr>
     </tbody>
   </table>
+
+  <div class="alert al-blue" style="margin-top:20px;">
+    <div class="alert-ic">ℹ</div>
+    <div><strong>Product mentions are subtle by design.</strong> The AI is instructed to add genuine value to the conversation first. The product link comes last, framed like a builder sharing their own tool — never "check out" or "try this". Configure keywords and daily limit under <code>promotions:</code> in config.yaml.</div>
+  </div>
 </section>
 
 <!-- TIERS -->
@@ -926,7 +937,7 @@ tr:hover td{background:rgba(255,255,255,.015);}
 
   <div class="timeline">
     <div class="tl-item"><div class="tl-time">09:00 AM — WAKE UP</div><div class="tl-text"><strong>Agent activates.</strong> Checks notifications from overnight. Replies to any mentions. Scans home feed for first-of-morning engagement opportunities.</div></div>
-    <div class="tl-item"><div class="tl-time">09:30 AM — MORNING SESSION</div><div class="tl-text"><strong>First full engagement session.</strong> Visits target account profiles, likes 6–10 recent posts, posts 4–7 replies. Follows 2–3 new accounts discovered from targets' followers.</div></div>
+    <div class="tl-item"><div class="tl-time">09:30 AM — MORNING SESSION</div><div class="tl-text"><strong>First full engagement session.</strong> Discovers new target accounts from hashtags (checks bio + follower count for fit). Visits target profiles, likes 6–10 recent posts, posts 4–7 replies. Follows 2–3 new accounts.</div></div>
     <div class="tl-item"><div class="tl-time">10:30–12:00 PM — NATURAL BREAK</div><div class="tl-text"><strong>Light activity.</strong> Occasional idle scrolling of home feed to maintain session warmth. No heavy engagement. Random 8-minute scroll intervals.</div></div>
     <div class="tl-item"><div class="tl-time">12:00 PM — MIDDAY SESSION</div><div class="tl-text"><strong>Hashtag scan + DMs.</strong> Searches configured hashtags for high-engagement posts to reply to. Sends DMs to warmed-up small accounts. Processes any new notifications.</div></div>
     <div class="tl-item"><div class="tl-time">2:00–5:00 PM — AFTERNOON BREAK</div><div class="tl-text"><strong>Profile like session.</strong> Visits 2 target profiles and likes 3–6 older posts from each — a subtle signal that gets noticed by creators who check their analytics.</div></div>
@@ -1051,28 +1062,29 @@ voice:
 <!-- TARGETS -->
 <section class="sec" id="targets">
   <div class="sec-tag">13 — TARGETING</div>
-  <div class="sec-head"><div class="sec-icon">⊕</div><h2>Target Accounts</h2></div>
-  <p style="color:var(--text-mid);font-size:12px;max-width:640px;margin-bottom:20px;">These are the Twitter accounts X-Autopilot monitors and engages with. Add 15–30 accounts in your exact niche. Mix follower sizes.</p>
+  <div class="sec-head"><div class="sec-icon">⊕</div><h2>Target Accounts — Auto-Discovered</h2></div>
+  <p style="color:var(--text-mid);font-size:12px;max-width:640px;margin-bottom:20px;">No hardcoded accounts needed. X-Autopilot scans your niche hashtags each morning, visits candidate profiles, checks their bio and recent tweets for relevance, and adds qualifying accounts automatically — sorted into the correct tier by follower count.</p>
 
   <div class="code" style="margin-bottom:20px;">
 <button class="copy" onclick="cp(this)">COPY</button>
-<span class="cm"># Add Twitter handles WITHOUT the @ symbol</span>
-target_accounts:
-  - <span class="vl">levelsio</span>
-  - <span class="vl">marc_louvion</span>
-  - <span class="vl">arvidkahl</span>
-  - <span class="vl">yourfavouritecreator</span>
-  - <span class="vl">anotherrelevantaccount</span>
+<span class="cm"># No manual list required — agent discovers targets automatically</span>
+target_accounts: []
 
 targets:
-  <span class="ky">auto_add_enabled</span>: <span class="vl">true</span>         <span class="cm"># Auto-discover new targets</span>
-  <span class="ky">auto_add_max_per_day</span>: <span class="vl">6</span>        <span class="cm"># Max new targets auto-added daily</span>
+  <span class="ky">auto_add_enabled</span>: <span class="vl">true</span>         <span class="cm"># Auto-discover new targets from hashtags</span>
+  <span class="ky">auto_add_max_per_day</span>: <span class="vl">6</span>        <span class="cm"># Max new targets added per day</span>
+  <span class="ky">auto_add_min_followers</span>: <span class="vl">0</span>       <span class="cm"># Minimum followers to qualify</span>
   <span class="ky">follow_from_mentions_enabled</span>: <span class="vl">true</span>
   <span class="ky">follow_from_home_enabled</span>: <span class="vl">true</span></div>
 
   <div class="alert al-blue">
     <div class="alert-ic">ℹ</div>
-    <div>X-Autopilot also auto-discovers targets by scanning who your existing targets engage with and who appears in relevant hashtags. New accounts are added to <code>targets.json</code> automatically up to your daily limit.</div>
+    <div><strong>How discovery works:</strong> Every morning session, the agent searches 2 of your configured hashtags, collects authors, visits each profile, reads their bio + recent tweets, and runs a relevance check against your voice/niche profile. Accounts that pass are added to <code>data/targets.json</code> with the correct tier (small / peer / big) based on follower count. You never need to maintain a manual list.</div>
+  </div>
+
+  <div class="alert al-yellow" style="margin-top:12px;">
+    <div class="alert-ic">⚡</div>
+    <div><strong>First run:</strong> On the very first morning session the target list is empty, so the agent will spend a few minutes discovering accounts before starting engagement. After that, the list grows on its own daily.</div>
   </div>
 </section>
 
@@ -1263,6 +1275,7 @@ targets:
       <tr><td>"Python not found" on Mac</td><td>Python not installed</td><td>Download from python.org, install, re-run setup.command</td></tr>
       <tr><td>setup.command won't open on Mac</td><td>Gatekeeper blocking unsigned script</td><td>Right-click → Open → click Open. Only required once.</td></tr>
       <tr><td>setup.bat blocked by Windows Defender</td><td>SmartScreen warning</td><td>Click More info → Run anyway. The script only installs Python packages.</td></tr>
+      <tr><td>Browser stuck on X logo / black screen</td><td>Chrome restored previous session, React hydration failed</td><td>Normal on first run or after a profile reset. The agent detects this automatically, clears the profile, and navigates to the login page.</td></tr>
       <tr><td>Browser closes immediately on launch</td><td>Twitter session expired</td><td>Restart — the browser will open the login page. Log in and press ENTER in the terminal.</td></tr>
       <tr><td>Agent shows "outside active hours" and does nothing</td><td>Current time outside configured hours</td><td>Normal behaviour. Adjust active_hours_start/end in config.yaml or Settings tab.</td></tr>
       <tr><td>Replies sound generic or robotic</td><td>Voice config too vague</td><td>Add more entries to never_say. Make personality more specific. Add proof_bank examples.</td></tr>

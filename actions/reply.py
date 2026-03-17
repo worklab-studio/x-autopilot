@@ -16,7 +16,7 @@ from agent.browser import human_delay, human_type, human_click, human_scroll, hu
 from agent.logger import log_action, is_limit_reached, get_daily_count, DB_PATH
 from agent.targets import get_target_accounts, maybe_auto_add_target, remove_target
 from agent.hashtags import load_hashtags
-from ai.tweet_writer import generate_reply_with_meta
+from ai.tweet_writer import generate_reply_with_meta, generate_product_mention_reply, find_matching_product
 from ai.vision import describe_images
 from ai.relevance import text_to_embedding, cosine_similarity, topic_signature
 from agent.pacing import cooldown_remaining_seconds, record_rate_limit, sleep_with_pacing
@@ -901,13 +901,33 @@ async def _reply_to_candidates(page, candidates: list, config: dict, max_replies
         if len(thread_text) > len(tweet.get("text", "")):
             extra_context_parts.append("Full thread read.")
 
-        reply_payload = generate_reply_with_meta(
-            tweet_text=thread_text,
-            author=author,
-            author_followers=followers,
-            tier=tier,
-            extra_context="\n".join(extra_context_parts) if extra_context_parts else None
-        )
+        # Check if this tweet is relevant to a product — if so, occasionally
+        # weave in a natural product mention instead of a plain reply
+        promo_cfg = config.get("promotions", {})
+        matched_product = None
+        if promo_cfg.get("product_reply_enabled", False):
+            if not is_limit_reached("product_reply", promo_cfg.get("product_reply_max_per_day", 2)):
+                matched_product = find_matching_product(thread_text, config)
+
+        if matched_product:
+            reply_payload = generate_product_mention_reply(
+                tweet_text=thread_text,
+                author=author,
+                author_followers=followers,
+                tier=tier,
+                product=matched_product,
+                extra_context="\n".join(extra_context_parts) if extra_context_parts else None,
+            )
+            print(f"   ↳ Product mention reply ({matched_product['name']})")
+        else:
+            reply_payload = generate_reply_with_meta(
+                tweet_text=thread_text,
+                author=author,
+                author_followers=followers,
+                tier=tier,
+                extra_context="\n".join(extra_context_parts) if extra_context_parts else None
+            )
+
         reply_text = reply_payload.get("text") if reply_payload else ""
         if not reply_text:
             continue
@@ -929,6 +949,14 @@ async def _reply_to_candidates(page, candidates: list, config: dict, max_replies
                 **(reply_payload.get("meta") or {})
             }
         )
+        if success and matched_product:
+            log_action(
+                action_type="product_reply",
+                target_user=author,
+                content=reply_text,
+                success=True,
+                metadata={"product": matched_product["name"], "tweet_url": tweet["url"]}
+            )
 
         if success:
             replies += 1
@@ -980,8 +1008,6 @@ async def run_reply_session(
         return
 
     target_accounts = get_target_accounts()
-    if not target_accounts:
-        target_accounts = config.get("target_accounts", [])
     random.shuffle(target_accounts)  # Vary the order each time
 
     replies_this_session = 0

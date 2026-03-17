@@ -1,85 +1,102 @@
-# Twitter Agent
+# Twitter Growth Agent
 
-AI-assisted Twitter automation agent with approval workflow, dashboard, and local browser/session control.
+> AI-powered Twitter automation — runs locally on your Mac or Windows PC.
+> One-time setup. No monthly fees. Your API key. Your data.
 
-This project runs locally and supports both Claude and GPT providers.
+---
 
-## Quick Start
+## 👋 First time here? Start with the Quick Start Guide
 
-### 1. Install
-```bash
-bash setup.sh
-```
+→ **[docs/BUYER_QUICKSTART.md](docs/BUYER_QUICKSTART.md)**
 
-### 2. Configure `.env`
-```bash
-cp .env.example .env
-```
+That guide walks you through the full setup in plain language with no assumed knowledge.
 
-Fill in:
+---
 
-```env
-LLM_PROVIDER=auto
-ANTHROPIC_API_KEY=...
-OPENAI_API_KEY=...
-TWITTER_USERNAME=your_handle
-DASHBOARD_PASSWORD=your_password
-SECRET_KEY=any_random_string
-```
+## The Short Version
 
-Notes:
-- Add at least one key: `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`.
-- `LLM_PROVIDER=auto` prefers Anthropic if both keys are present.
-- Set `LLM_PROVIDER=openai` or `LLM_PROVIDER=anthropic` to force one.
+### Requirements
+- **Python 3.9+** — https://python.org/downloads
+  - Windows: check ✅ "Add Python to PATH" during install
+- **An API key** — Anthropic (https://console.anthropic.com) or OpenAI (https://platform.openai.com/api-keys)
+- Node.js is **not required** (the dashboard comes pre-built)
 
-### 3. Health check
-```bash
-source venv/bin/activate
-python tools/health_check.py
-```
+### First-time Setup (once only)
 
-### 4. Save Twitter session (one-time)
-```bash
-python main.py --test
-```
+| Mac | Windows |
+|-----|---------|
+| Double-click **`setup.command`** | Double-click **`setup.bat`** |
 
-### 5. Start dashboard + agent
-```bash
-bash start.sh
-```
+Takes 2–5 minutes. Installs Python packages + downloads the automation browser.
 
-Dashboard:
-- UI: `http://localhost:3000`
-- API: `http://localhost:5001` (default)
+> **Mac:** If you see *"cannot be opened because it is from an unidentified developer"*
+> → Right-click the file → **Open** → **Open**
 
-## Model Overrides (Optional)
+> **Windows:** If SmartScreen warns you → click **More info** → **Run anyway**
 
-```env
-ANTHROPIC_TEXT_MODEL=claude-3-5-sonnet-20241022
-ANTHROPIC_VISION_MODEL=claude-3-5-sonnet-20241022
-OPENAI_TEXT_MODEL=gpt-4o-mini
-OPENAI_VISION_MODEL=gpt-4o-mini
-```
+### Launch (every time)
 
-## Core Commands
+| Mac | Windows |
+|-----|---------|
+| Double-click **`start.command`** | Double-click **`start.bat`** |
 
-```bash
-python tools/health_check.py
-python tools/test_voice.py
-python tools/dry_run.py
-python main.py --test
-python main.py
-```
+Your browser opens automatically to **http://localhost:5001**
 
-## Private Paid Distribution Docs
+### First Launch — Add Your Keys
 
-- Private release checklist: [`docs/PRIVATE_RELEASE.md`](docs/PRIVATE_RELEASE.md)
-- Buyer setup guide: [`docs/BUYER_QUICKSTART.md`](docs/BUYER_QUICKSTART.md)
-- License terms: [`LICENSE`](LICENSE)
+1. Click the **SETTINGS** tab in the dashboard
+2. Fill in **ACCOUNT & API KEYS** at the top:
+   - Your Twitter username (without @)
+   - Your Anthropic API key (or OpenAI as fallback)
+3. Click **SAVE CREDENTIALS**
+4. Log into Twitter when the browser window opens
 
-## Security Notes
+That's it. The agent starts running.
 
-- Never commit `.env`.
-- Never commit `data/twitter_cookies.json`.
-- Keep repository private for paid distribution.
+---
 
+## Dashboard Tabs
+
+| Tab | What it does |
+|-----|-------------|
+| **Live Feed** | Real-time log of every action |
+| **Approval Queue** | AI tweets waiting for your review before posting |
+| **Voice Lab** | Edit the AI's writing style and personality |
+| **Discovery** | Hashtags + auto-discovered target accounts (no manual list needed) |
+| **Promotions** | Subtle product mentions woven into replies when topics match |
+| **Settings** | All behaviour controls — limits, timing, safety |
+
+---
+
+## Stopping the Agent
+
+- Click **QUIT** in the dashboard top bar, or
+- Close the terminal window that opened when you double-clicked start
+
+---
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| "Python not found" | Re-install Python and tick "Add to PATH" |
+| Dashboard is blank | Re-run `setup.command` / `setup.bat` |
+| Port 5001 in use | The agent is already running — check your taskbar |
+| Browser stuck on X logo | Normal on first launch — agent clears it automatically and navigates to login |
+| Twitter login needed again | A browser window will open to the login page — log in normally |
+
+---
+
+## Files You Should Know About
+
+| File | Purpose |
+|------|---------|
+| `setup.command` / `setup.bat` | First-time setup (run once) |
+| `start.command` / `start.bat` | Launch the agent (run every time) |
+| `.env` | Your API keys (auto-created, never share this file) |
+| `config.yaml` | All agent settings (editable from the dashboard) |
+| `data/` | Database, session, cookies — stays on your machine |
+
+---
+
+*Questions? See the full guide in [docs/BUYER_QUICKSTART.md](docs/BUYER_QUICKSTART.md)*

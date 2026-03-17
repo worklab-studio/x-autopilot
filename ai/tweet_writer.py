@@ -1106,6 +1106,92 @@ OUTPUT FORMAT — Return ONLY a JSON array of strings, 5 items."""
     }
 
 
+def find_matching_product(tweet_text: str, config: dict):
+    """
+    Check if a tweet is relevant to any of the configured products.
+    Returns the first matching product dict, or None.
+    Requires at least 2 keyword hits so accidental single-word matches don't fire.
+    """
+    promo = config.get("promotions", {})
+    if not promo.get("product_reply_enabled", False):
+        return None
+
+    text_lower = (tweet_text or "").lower()
+    for product in promo.get("products", []):
+        keywords = [kw.lower() for kw in product.get("trigger_keywords", [])]
+        hits = sum(1 for kw in keywords if kw in text_lower)
+        if hits >= 1 and any(kw in text_lower for kw in keywords):
+            return product
+    return None
+
+
+def generate_product_mention_reply(
+    tweet_text: str,
+    author: str,
+    author_followers: int,
+    tier: str,
+    product: dict,
+    extra_context: str = None,
+) -> dict:
+    """
+    Generate a reply that adds genuine value AND naturally slips in the product.
+    The product mention should feel like a personal share, never an ad.
+    """
+    voice = load_voice_profile()
+
+    tier_instruction = {
+        "small": "Warm and personal. Like telling a friend about something useful you built.",
+        "peer": "Peer-to-peer. Add a real insight first, then mention the tool like a builder casually noting their own work.",
+        "big": "Sharp and specific. One line of value, then the briefest possible product mention — make it feel incidental.",
+    }.get(tier, "Add genuine value first, then mention the product naturally.")
+
+    extra_section = f"\nEXTRA CONTEXT:\n{extra_context}\n" if extra_context else ""
+
+    prompt = f"""You are a ghostwriter for an indie hacker and designer replying to a tweet.
+
+TWEET FROM @{author} ({author_followers:,} followers):
+"{tweet_text}"
+{extra_section}
+YOUR PRODUCT (relevant to this tweet):
+Name: {product['name']}
+URL: {product['url']}
+What it does: {product['description']}
+
+VOICE PROFILE:
+{voice}
+
+TIER INSTRUCTION:
+{tier_instruction}
+
+TASK:
+Write ONE reply that does two things:
+1. First, add a real insight, observation, or layer to what they said — not generic agreement
+2. Then, mention your product in the most natural way possible — like "I actually built [name] for exactly this kind of thing — [url]" or "been dealing with the same thing, ended up building [name] ([url])"
+
+STRICT RULES:
+- Under 240 characters total
+- The product mention must feel like an organic aside, NOT a pitch
+- Never start with "Great post!" or sycophantic openers
+- Never use "check out", "try", "you should use", or sales language
+- The URL must appear naturally at the end or within the product mention
+- No hashtags, no em dashes (—)
+- Sound like a real builder sharing their own tool, not a marketer
+- The first part (value add) must stand on its own — the product mention is a bonus, not the focus
+
+OUTPUT: Write ONLY the reply text. Nothing else."""
+
+    text = chat_text(prompt=prompt, max_tokens=280).strip().replace("—", "-")
+    reply = _trim_to_sentence(text, 240)
+
+    return {
+        "text": reply,
+        "meta": {
+            "shape": "product_mention",
+            "product": product["name"],
+        }
+    }
+
+
 def _trim_reply(text: str, max_len: int) -> str:
     return _trim_to_sentence(text, max_len)
 

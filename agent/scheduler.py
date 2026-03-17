@@ -255,6 +255,8 @@ async def morning_session(page):
     from actions.tweet import generate_and_queue_tweet, generate_and_queue_promo_tweet, post_approved_tweets
     from actions.notifications import run_notifications_session
     from ai.trend_scanner import generate_trend_based_tweet, generate_weekly_thread
+    from agent.target_discovery import discover_new_targets
+    from agent.targets import get_target_accounts
 
     from agent.status_overlay import set_status
     print("\n🌅 MORNING SESSION")
@@ -262,6 +264,15 @@ async def morning_session(page):
     config = load_config()
     profile = get_autonomy_profile(config)
     nav_limit = int(config.get("safety", {}).get("nav_actions_per_session", 2) or 0)
+
+    # Discover new targets once per day (or whenever the list is small)
+    targets_cfg = config.get("targets", {})
+    if targets_cfg.get("auto_add_enabled", False):
+        from agent.logger import get_daily_count
+        if get_daily_count("target_added") == 0 or len(get_target_accounts()) < 5:
+            await discover_new_targets(page, max_to_add=int(targets_cfg.get("auto_add_max_per_day", 6)))
+            if not _is_turbo():
+                await asyncio.sleep(random.uniform(15, 30))
 
     if config.get("posting", {}).get("auto_generate_threads", False):
         print("📅 Daily thread — generating deep-dive...")

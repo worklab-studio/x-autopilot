@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 
 class LLMConfigError(RuntimeError):
