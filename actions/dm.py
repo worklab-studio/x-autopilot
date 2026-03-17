@@ -141,6 +141,7 @@ async def send_dm(page, username: str, message: str, skip_navigation: bool = Fal
             '[aria-label="Message"]',
         ]
 
+        msg_btn = None
         try:
             msg_btn = await page.wait_for_selector(", ".join(msg_btn_selectors), timeout=8000)
         except Exception:
@@ -184,31 +185,35 @@ async def send_dm(page, username: str, message: str, skip_navigation: bool = Fal
         await human_delay(0.8, 1.5)
 
         # The send button (arrow ↑) only appears in DOM AFTER typing.
-        # Try multiple known selectors for the send button.
+        # Only use specific selectors — avoid broad ones that match other buttons
+        # (emoji, attachment, etc.) before the real send button appears.
         send_selectors = [
             '[data-testid="dmComposerSendButton"]',
             '[aria-label="Send message"]',
-            '[aria-label="Send"]',
-            # The button is a role="button" inside the DM composer footer
-            'div[data-testid="DMComposer"] [role="button"]:last-child',
+            '[aria-label="Send Message"]',
         ]
 
         send_btn = None
-        try:
-            send_btn = await page.wait_for_selector(
-                ", ".join(send_selectors), timeout=8000
-            )
-        except Exception:
-            pass
+        for selector in send_selectors:
+            try:
+                btn = await page.wait_for_selector(selector, timeout=4000)
+                if btn:
+                    send_btn = btn
+                    break
+            except Exception:
+                continue
 
         if send_btn:
             await human_click(page, send_btn)
             await human_delay(1.5, 2.5)
             return True
 
-        # Fallback: hit Enter — Twitter DM also sends on Enter
+        # Fallback: press Enter on the page (more reliable than dm_input.press
+        # since focus can shift after typing)
         print("   ⚠️  Send button not found — attempting keyboard Enter fallback")
-        await dm_input.press("Enter")
+        await human_click(page, dm_input)   # re-focus the input
+        await human_delay(0.3, 0.6)
+        await page.keyboard.press("Enter")
         await human_delay(1.5, 2.5)
         return True
 
