@@ -571,7 +571,7 @@ async def run_scheduler(page):
             # ── 15% chance: curiosity profile visit before main session ──────────
             if random.random() < 0.15 and not catch_up:
                 await curiosity_profile_visit(page)
-                await human_delay(30, 90)
+                await asyncio.sleep(random.uniform(30, 90))
 
             # ── Random break simulation ──────────────────────────────────────────
             break_chance = 0.20 if is_weekend() else 0.30

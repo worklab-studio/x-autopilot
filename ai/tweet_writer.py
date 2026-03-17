@@ -57,22 +57,66 @@ TWEET_TEMPLATES = [
         "name": "compressed_system_step",
         "instruction": "Structure: compressed system -> one practical step. No extra fluff.",
     },
+    {
+        "name": "number_insight",
+        "instruction": "Start with a specific number or metric. Build the insight around it. End on a dry observation.",
+    },
+    {
+        "name": "vulnerability_take",
+        "instruction": "Open with a failure or mistake. State what it revealed. End with the rule that came from it.",
+    },
+    {
+        "name": "build_update",
+        "instruction": "One concrete build update with a real number. State what changed. One dry close — no CTA.",
+    },
 ]
 
 THREAD_TEMPLATES = [
     {
         "name": "field_note",
-        "instruction": "Field Note: problem -> what you tried -> what broke -> new rule.",
+        "instruction": "Field Note: problem -> what you tried -> what broke -> new rule. Hook is the problem stated with one specific detail.",
     },
     {
         "name": "mechanics",
-        "instruction": "Mechanics: concept -> 3 step system -> pitfalls -> one crisp takeaway.",
+        "instruction": "Mechanics: concept -> 3-step system -> pitfalls -> one crisp takeaway. Hook names the system with a specific metric.",
     },
     {
         "name": "counter_intuitive",
-        "instruction": "Counter-intuitive: common belief -> why it fails -> your alternative -> example.",
+        "instruction": "Counter-intuitive: common belief -> why it fails -> your alternative -> real example. Hook states the counter-intuitive thing as fact.",
+    },
+    {
+        "name": "before_after",
+        "instruction": "Hook: state what changed (use a number or metric). Then: what you did before -> the moment of shift -> what changed -> how to apply it. Each tweet earns the next.",
+    },
+    {
+        "name": "myth_busting",
+        "instruction": "Hook: name the biggest myth in one line. Each subsequent tweet busts one specific myth with a counter-example or real number. End: the actual truth in one crisp sentence.",
+    },
+    {
+        "name": "step_by_step",
+        "instruction": "Hook: state the outcome in one line with a specific metric. Each tweet = one step with concrete detail. No fluff. End: the trap most people fall into at the last step.",
+    },
+    {
+        "name": "hot_take_thread",
+        "instruction": "Hook: unpopular opinion stated as fact. Next: why most people believe the wrong thing. Then: evidence or personal example with a real number. End: what to do instead.",
+    },
+    {
+        "name": "build_in_public",
+        "instruction": "Hook: specific metric or milestone (revenue, users, days). Next: what you tried -> what broke -> what surprised you. End: one rule you now live by.",
     },
 ]
+
+# Hook patterns injected into prompts for engagement-optimized content
+HOOK_PATTERNS = """
+HOOK PATTERNS (pick the strongest one for this topic):
+1. Specific number + outcome — "I went from X to Y by doing Z"
+2. Unpopular opinion stated as fact — "Most [audience] do [thing] wrong."
+3. Curiosity gap — state the result, withhold the method
+4. Vulnerability opener — "I failed [N] times before I understood this:"
+5. Counter-intuitive fact with a real number
+6. Bold specific claim tied to a concrete scenario (not vague)
+The hook must make someone stop scrolling. It must not be generic.
+"""
 
 
 def load_voice_profile() -> str:
@@ -205,6 +249,53 @@ def _extract_keywords(text: str, max_words: int = 6) -> list:
     return keywords[:max_words]
 
 
+TWEET_IDEAS_PATH = Path(__file__).parent.parent / "data" / "tweet_ideas.txt"
+
+
+def _get_next_idea():
+    """Return the oldest unused idea from tweet_ideas.txt and mark it used."""
+    if not TWEET_IDEAS_PATH.exists():
+        return None
+    try:
+        lines = TWEET_IDEAS_PATH.read_text(encoding="utf-8").splitlines()
+        updated = []
+        found = None
+        today = datetime.now().strftime("%Y-%m-%d")
+        for line in lines:
+            stripped = line.strip()
+            if found is None and stripped and not stripped.startswith("#"):
+                found = stripped
+                updated.append(f"# USED: {today} — {stripped}")
+            else:
+                updated.append(line)
+        if found is not None:
+            TWEET_IDEAS_PATH.write_text("\n".join(updated) + "\n", encoding="utf-8")
+        return found
+    except Exception:
+        return None
+
+
+def get_ideas_list() -> list:
+    """Return all unused ideas from tweet_ideas.txt."""
+    if not TWEET_IDEAS_PATH.exists():
+        return []
+    try:
+        lines = TWEET_IDEAS_PATH.read_text(encoding="utf-8").splitlines()
+        return [l.strip() for l in lines if l.strip() and not l.strip().startswith("#")]
+    except Exception:
+        return []
+
+
+def add_idea(idea: str):
+    """Append a new idea to tweet_ideas.txt."""
+    idea = idea.strip()
+    if not idea:
+        return
+    TWEET_IDEAS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(TWEET_IDEAS_PATH, "a", encoding="utf-8") as f:
+        f.write(f"{idea}\n")
+
+
 def _has_specifics(text: str, proof_keywords: list, mention_handles: list) -> bool:
     lowered = (text or "").lower()
     if re.search(r"\d", lowered):
@@ -236,6 +327,73 @@ def _banned_opener(text: str) -> bool:
     ]
     lowered = (text or "").strip().lower()
     return any(lowered.startswith(prefix) for prefix in banned)
+
+
+def _quality_check(tweet: str, voice: str) -> dict:
+    """
+    Run an AI quality check on a tweet against the voice profile.
+    Scores hook strength, voice match, and engagement potential.
+    Returns: {hook: int, voice_match: int, engagement: int, pass: bool, reason: str}
+    """
+    # Hard-fail checks before calling AI (fast, no tokens)
+    if not tweet or not tweet.strip():
+        return {"hook": 0, "voice_match": 0, "engagement": 0, "pass": False, "reason": "empty tweet"}
+
+    lower = tweet.lower()
+    if any(w in lower for w in ["http://", "https://"]):
+        return {"hook": 0, "voice_match": 0, "engagement": 0, "pass": False, "reason": "contains URL (links go in replies)"}
+    if "#" in tweet and any(f"#{w}" in lower for w in ["twitter", "x", "ai", "saas", "startup", "indiehacker", "buildinpublic"]):
+        return {"hook": 0, "voice_match": 0, "engagement": 0, "pass": False, "reason": "contains hashtags"}
+
+    prompt = f"""You are a senior Twitter content strategist evaluating a tweet for an indie hacker account.
+
+TWEET TO EVALUATE:
+\"\"\"{tweet}\"\"\"
+
+VOICE PROFILE:
+{voice}
+
+Score this tweet on 3 dimensions from 1-10:
+
+1. HOOK (1-10): Does the first line stop the scroll? Does it create tension, curiosity, counter-intuition, or a specific claim?
+   - 9-10: Irresistible, would stop most scrollers
+   - 7-8: Good, clearly non-generic
+   - 5-6: Decent but forgettable
+   - 1-4: Generic, vague, or clichéd
+
+2. VOICE_MATCH (1-10): Does it sound exactly like the voice profile? Tone, rhythm, word choice, no motivational fluff, dry/specific close?
+   - 9-10: Indistinguishable from the real account
+   - 7-8: Clearly in voice
+   - 5-6: Mostly on voice but with some off notes
+   - 1-4: Doesn't match the voice profile
+
+3. ENGAGEMENT (1-10): Will this earn replies, bookmarks, or retweets — not just passive likes?
+   - 9-10: Will definitely spark conversation or saves
+   - 7-8: Likely to earn real engagement
+   - 5-6: Might get some likes but not much depth
+   - 1-4: Likely to be scrolled past
+
+Respond ONLY with valid JSON, no markdown:
+{{"hook": <int>, "voice_match": <int>, "engagement": <int>, "reason": "<one sentence on the biggest weakness, or 'passes all checks' if all >= 7>"}}"""
+
+    try:
+        raw = chat_text(prompt=prompt, max_tokens=120).strip()
+        raw = raw.replace("```json", "").replace("```", "").strip()
+        scores = json.loads(raw)
+        hook = int(scores.get("hook", 0))
+        voice_match = int(scores.get("voice_match", 0))
+        engagement = int(scores.get("engagement", 0))
+        passes = hook >= 7 and voice_match >= 7 and engagement >= 7
+        return {
+            "hook": hook,
+            "voice_match": voice_match,
+            "engagement": engagement,
+            "pass": passes,
+            "reason": scores.get("reason", "") if not passes else "",
+        }
+    except Exception:
+        # If quality check fails (parse error etc.), don't block generation
+        return {"hook": 7, "voice_match": 7, "engagement": 7, "pass": True, "reason": ""}
 
 
 def _validate_tweet(
@@ -337,7 +495,18 @@ def generate_tweet(
     allow_question = tweet_type == "question"
     max_attempts = int(strategy.get("max_generation_attempts", 4) or 4)
 
-    pillar = _pick_one(strategy.get("voice_pillars"))
+    all_pillars = _listify(strategy.get("voice_pillars"))
+    # Pillar rotation: exclude pillars used in the last 2 days
+    try:
+        from agent.logger import get_recent_pillars
+        recent_pillars = get_recent_pillars(days=2)
+        available_pillars = [p for p in all_pillars if p not in recent_pillars]
+        if not available_pillars:
+            available_pillars = all_pillars  # Fall back to all if all used
+    except Exception:
+        available_pillars = all_pillars
+    pillar = _pick_one(available_pillars)
+
     angle = _pick_one(strategy.get("signature_angles"))
     proof_point = _pick_one(strategy.get("proof_bank"))
     weekly_direction = _listify(strategy.get("weekly_direction"))
@@ -346,6 +515,12 @@ def generate_tweet(
     template = {"name": "freeform", "instruction": "Freeform, still obey all rules."}
     if bool(strategy.get("tweet_templates_enabled", True)) and TWEET_TEMPLATES:
         template = random.choice(TWEET_TEMPLATES)
+
+    # Check tweet ideas inbox first (oldest unused idea takes priority)
+    if not topic:
+        idea_topic = _get_next_idea()
+        if idea_topic:
+            topic = idea_topic
 
     # Build context
     day_of_week = datetime.now().strftime("%A")
@@ -379,7 +554,7 @@ Current build context: {build_section}
 Topic focus: {topic_section}
 
 VOICE PILLAR (use exactly one):
-{pillar or "general building"} 
+{pillar or "general building"}
 
 SIGNATURE ANGLE:
 {angle or "none"}
@@ -396,11 +571,13 @@ TEMPLATE TO FOLLOW:
 INSTRUCTION:
 {type_instruction}
 
+{HOOK_PATTERNS}
+
 STRICT RULES:
 
 Hard limit: 280 characters.
 
-The first line must create tension, contrast, or intellectual friction.
+The first line must stop the scroll — use one of the hook patterns above.
 
 One core idea only.
 
@@ -422,9 +599,13 @@ No motivational tone.
 
 No "Here's what I learned" framing.
 
+No external URLs in the tweet body.
+
 End on insight or a subtle dry close. Never a CTA.
 
 It must read like a real thought, not a content strategy.
+
+Write for replies and bookmarks — not just likes. The best tweets start conversations.
 
 Hard filters:
 - Must include a specific noun, number, tool, metric, or concrete scenario.
@@ -451,6 +632,7 @@ No explanation.
 No quotes."""
     last_reason = ""
     tweet = ""
+    quality_scores = None
     for _ in range(max_attempts):
         avoid_line = f"\nAVOID THIS ISSUE:\n{last_reason}\n" if last_reason else ""
         prompt = f"{prompt_base}{avoid_line}"
@@ -460,6 +642,13 @@ No quotes."""
         ).strip().replace("—", "-")
         tweet = _enforce_line_breaks(tweet)
         tweet = _trim_to_sentence(tweet, 280)
+
+        # AI quality gate — check hook, voice match, engagement
+        qc = _quality_check(tweet, voice)
+        if not qc["pass"]:
+            last_reason = f"Quality check failed — {qc['reason']}"
+            continue
+
         ok, reason = _validate_tweet(
             tweet,
             config,
@@ -468,6 +657,14 @@ No quotes."""
             recent_texts,
         )
         if ok:
+            quality_scores = qc
+            # Log pillar used for rotation tracking
+            if pillar:
+                try:
+                    from agent.logger import log_tweet_pillar
+                    log_tweet_pillar(pillar)
+                except Exception:
+                    pass
             return tweet
         last_reason = reason or "failed validation"
 
@@ -510,6 +707,100 @@ OUTPUT: Write ONLY the tweet text. Nothing else."""
     ).strip().replace("—", "-")
     tweet = _enforce_line_breaks(tweet)
     return _trim_to_sentence(tweet, 280)
+
+
+def generate_from_prompt(prompt: str, format: str = "tweet") -> "str | list":
+    """
+    Generate a tweet or thread from a user-supplied free-text prompt.
+    Enforces strong hooks and engagement-optimized structure.
+
+    Args:
+        prompt: What the user wants to write about
+        format: "tweet" or "thread"
+    """
+    if format == "thread":
+        return generate_thread(topic=prompt)
+    else:
+        return generate_tweet(topic=prompt)
+
+
+def generate_tweet_variants(n: int = 3, **kwargs) -> list:
+    """
+    Generate N tweet variants in one call by running generate_tweet() N times
+    with different random template/pillar selections.
+
+    Returns a list of up to N tweet strings.
+    """
+    variants = []
+    seen = set()
+    attempts = 0
+    max_attempts = n * 3  # Allow retries for uniqueness
+
+    while len(variants) < n and attempts < max_attempts:
+        attempts += 1
+        tweet = generate_tweet(**kwargs)
+        if tweet and tweet not in seen:
+            seen.add(tweet)
+            variants.append(tweet)
+
+    return variants
+
+
+def generate_thread_hooks(topic: str, n: int = 3) -> list:
+    """
+    Generate N hook options for the first tweet of a thread.
+    Each hook uses a different style: provocative, counter-intuitive, bold claim.
+    User picks one, then the full thread is generated around it.
+
+    Returns a list of hook strings.
+    """
+    voice = load_voice_profile()
+    config = load_config()
+    strategy = config.get("content_strategy", {})
+
+    pillar = _pick_one(strategy.get("voice_pillars"))
+    proof_point = _pick_one(strategy.get("proof_bank"))
+
+    hook_styles = [
+        "PROVOCATIVE OPENER: A bold, somewhat controversial claim about the topic. States an opinion as fact. No hedge.",
+        "COUNTER-INTUITIVE FACT: Something that sounds wrong but is true. Challenges the conventional wisdom around the topic. Includes a specific number or metric.",
+        "CURIOSITY GAP: States the result or end state without revealing how. The reader MUST read on to understand.",
+        "VULNERABILITY OPENER: Starts with a failure, mistake, or wrong assumption the author had. Honest, specific.",
+        "SPECIFIC NUMBER + OUTCOME: Leads with a concrete metric or data point that proves a non-obvious point.",
+    ]
+
+    # Pick n different styles
+    selected_styles = random.sample(hook_styles, min(n, len(hook_styles)))
+
+    hooks = []
+    for style in selected_styles:
+        prompt = f"""You are a ghostwriter for an indie hacker and product designer.
+Write ONLY the first tweet (the hook) of a thread about: {topic}
+
+VOICE PROFILE:
+{voice}
+
+VOICE PILLAR: {pillar or "general building"}
+PROOF POINT: {proof_point or "none"}
+
+HOOK STYLE TO USE:
+{style}
+
+RULES:
+1. Under 200 characters — the hook must be punchy
+2. No "Thread:" or "1/" label
+3. No hashtags, no em dashes, no external URLs
+4. Must make the reader desperate to read the next tweet
+5. Sound exactly like the voice profile
+
+OUTPUT: Write ONLY the hook tweet text. Nothing else."""
+
+        raw = chat_text(prompt=prompt, max_tokens=200).strip().replace("—", "-")
+        hook = _trim_to_sentence(raw, 200)
+        if hook:
+            hooks.append(hook)
+
+    return hooks
 
 
 def generate_thread(topic: str, num_tweets: int = 4) -> list:
@@ -557,18 +848,21 @@ WEEKLY DIRECTION (optional anchors):
 THREAD TEMPLATE TO FOLLOW:
 {thread_template["instruction"]}
 
+{HOOK_PATTERNS}
+
 THREAD RULES:
-1. First tweet is the hook — makes people need to read the rest
-2. Each tweet is under 280 characters
-3. Each tweet stands alone — someone reading just that one tweet gets value
-4. Thread flows naturally from start to finish
-5. Last tweet is the real insight — the thing they came for
+1. First tweet is the hook — use one of the hook patterns above. It must stop the scroll.
+2. Each tweet is under 280 characters (aim for 150-250 for educational content)
+3. Each tweet stands alone AND pulls the reader to the next — no tweet is skippable
+4. Thread flows naturally from start to finish — completion rate is a ranking signal
+5. Last tweet is the real insight or a soft question that invites a reply ("What's your experience with this?")
 6. No "Thread:" or "1/" labels — just the content
 7. No hashtags
 8. Use line breaks for breathing room when helpful
 9. Never use em dashes
-10. No questions unless explicitly asked for a question-type thread
+10. No external URLs in any tweet body
 11. Use the proof point explicitly at least once
+12. Write for bookmarks and replies — not just likes
 
 OUTPUT FORMAT — Return ONLY a JSON array of tweet strings:
 ["tweet 1 text", "tweet 2 text", "tweet 3 text", "tweet 4 text"]"""
