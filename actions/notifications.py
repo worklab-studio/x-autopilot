@@ -21,6 +21,7 @@ from actions.reply import (
     reply_to_tweet,
     _parse_tweet_article,
 )
+from actions.follow import follow_user, already_followed
 from agent.dynamic_config import load_config_with_dynamic
 
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
@@ -267,11 +268,10 @@ async def run_notifications_session(page):
                     continue
 
                 thread_context = await _collect_conversation_context(page, tweet["url"], config)
-                if not thread_context.get("replying_to_self"):
-                    continue
                 if thread_context.get("has_video"):
                     continue
 
+                replying_to_self = thread_context.get("replying_to_self", False)
                 thread_text = thread_context.get("thread_text") or tweet.get("text", "")
                 if not thread_text:
                     continue
@@ -289,22 +289,35 @@ async def run_notifications_session(page):
                 followers = await get_follower_count(page, tweet["author"])
                 tier = get_tier(followers, config)
 
+                # Build context so the AI knows if it's a back-and-forth continuation
+                # vs. someone replying fresh to the agent's post
+                if replying_to_self:
+                    extra_ctx = (
+                        "This is a back-and-forth conversation from your notifications. "
+                        "The context shows: the original post, your previous reply, and their "
+                        "response to you. Continue the conversation naturally — be warm, "
+                        "specific, and add genuine value. Don't just agree; move the conversation forward."
+                    )
+                else:
+                    extra_ctx = (
+                        "Someone replied to or commented on one of your posts. "
+                        "Read their message carefully and respond in a way that feels natural "
+                        "and conversational — like you'd reply to a friend who engaged with your content. "
+                        "Be genuine and specific to what they said."
+                    )
+
                 reply_payload = generate_reply_with_meta(
                     tweet_text=thread_text,
                     author=tweet["author"],
                     author_followers=followers,
                     tier=tier,
-                    extra_context=(
-                        "This is a follow-up reply from your notifications. "
-                        "The context above shows the full conversation: the original post, "
-                        "your previous reply, and their response to you. "
-                        "Read the whole thread carefully before deciding how to continue the conversation naturally."
-                    )
+                    extra_context=extra_ctx,
                 )
                 reply_text = reply_payload.get("text") if reply_payload else ""
                 if not reply_text:
                     continue
 
+                await set_status(f"Replying to @{tweet['author']} (notification)")
                 success = await reply_to_tweet(page, tweet["url"], reply_text)
                 log_action(
                     action_type="reply",
@@ -316,12 +329,28 @@ async def run_notifications_session(page):
                     metadata={
                         "tweet_url": tweet["url"],
                         "source": "notifications",
+                        "replying_to_self": replying_to_self,
                         **(reply_payload.get("meta") or {})
                     }
                 )
 
                 if success:
                     replied += 1
+                    print(f"   ✅ Replied to @{tweet['author']}")
+
+                    # Follow them if not already following and limit allows
+                    if not already_followed(tweet["author"]) and not is_limit_reached("follow", config["engagement"]["daily_follows"]):
+                        await set_status(f"Following @{tweet['author']} (notification)")
+                        follow_ok = await follow_user(page, tweet["author"])
+                        if follow_ok:
+                            log_action(
+                                action_type="follow",
+                                target_user=tweet["author"],
+                                target_user_followers=followers,
+                                success=True,
+                                metadata={"source": "notification_reply"}
+                            )
+                            print(f"   ✅ Followed @{tweet['author']}")
 
                 delay = random.uniform(
                     config["engagement"]["min_delay_seconds"],
