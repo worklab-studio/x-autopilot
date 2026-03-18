@@ -1,6 +1,6 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────
-#  X Autopilot — Mac App Launcher (Smart Start / Quit)
+#  Run Agent — Mac App Launcher (Smart Start / Quit)
 #  Double-click once  →  starts the agent (Figma-style window)
 #  Double-click again →  quits agent + closes window + Terminal
 # ─────────────────────────────────────────────────────────────
@@ -9,16 +9,18 @@ PROJECT_DIR="$(cd "$(dirname "$0")/../../.." && pwd)"
 
 # Safety check
 if [ ! -f "$PROJECT_DIR/start.sh" ]; then
-    osascript -e 'display alert "X Autopilot" message "Cannot find start.sh — make sure X Autopilot.app is inside the project folder." as critical'
+    osascript -e 'display alert "Run Agent" message "Cannot find start.sh — make sure 4. Run Agent.app is inside the project folder." as critical'
     exit 1
 fi
 
-# ── Detect if agent is already running (port 5001 in use) ──
-AGENT_PID=$(lsof -ti :5001 2>/dev/null | head -1)
+# ── Detect if agent is already running (port from port.txt, fallback 5001) ──
+PORT=$(cat "$PROJECT_DIR/data/port.txt" 2>/dev/null | tr -d '[:space:]')
+[ -z "$PORT" ] && PORT=5001
+AGENT_PID=$(lsof -ti :$PORT 2>/dev/null | head -1)
 
 if [ -n "$AGENT_PID" ]; then
     # Agent is running — offer to quit
-    RESULT=$(osascript -e 'button returned of (display dialog "X Autopilot is running.\n\nQuit the agent and close the dashboard?" buttons {"Cancel", "Quit"} default button "Quit" with title "X Autopilot")')
+    RESULT=$(osascript -e 'button returned of (display dialog "Run Agent is running.\n\nQuit the agent and close the dashboard?" buttons {"Cancel", "Quit"} default button "Quit" with title "Run Agent")')
     if [ "$RESULT" = "Quit" ]; then
         # 1. Signal agent to stop gracefully
         touch "$PROJECT_DIR/data/quit_flag"
@@ -29,11 +31,11 @@ if [ -n "$AGENT_PID" ]; then
             rm -f "$PROJECT_DIR/data/browser_pid"
         fi
 
-        # 3. Close Terminal window titled "X Autopilot"
-        osascript -e 'tell application "Terminal" to close (every window whose custom title is "X Autopilot")'
+        # 3. Close Terminal window titled "Run Agent"
+        osascript -e 'tell application "Terminal" to close (every window whose custom title is "Run Agent")'
 
         # 4. Notify
-        osascript -e 'display notification "X Autopilot stopped." with title "X Autopilot"'
+        osascript -e 'display notification "Run Agent stopped." with title "Run Agent"'
     fi
     exit 0
 fi
@@ -50,7 +52,7 @@ on run argv
     set projectDir to item 1 of argv
     tell application "Terminal"
         set w to do script ("cd '" & projectDir & "' && bash start.sh")
-        set custom title of front window to "X Autopilot"
+        set custom title of front window to "Run Agent"
     end tell
 end run
 APPLEEOF

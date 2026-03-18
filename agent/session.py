@@ -91,13 +91,32 @@ async def manual_login(browser, page):
     print("\n" + "="*50)
     print("🔐 MANUAL LOGIN REQUIRED")
     print("="*50)
-    print("The browser will open Twitter's login page.")
-    print("Please log in manually in the browser window.")
-    print("Once you're on your home feed, come back here and press ENTER.")
+    print("")
+    print("  ⚠️  USE EMAIL/PASSWORD — NOT 'Sign in with Google'")
+    print("     Google sign-in is BLOCKED in automated browsers.")
+    print("     Enter your email or @username → then your password.")
+    print("")
+    print("  Once you're on your home feed, press ENTER here.")
     print("="*50 + "\n")
 
     await page.goto(TWITTER_LOGIN, wait_until="domcontentloaded")
     await human_delay(2, 3)
+
+    # Inject a red banner so the user sees the warning IN the browser too
+    try:
+        await page.evaluate("""() => {
+            const b = document.createElement('div');
+            Object.assign(b.style, {
+                position:'fixed', top:'0', left:'0', right:'0', zIndex:'9999999',
+                background:'#dc2626', color:'#fff', textAlign:'center',
+                padding:'11px 16px', fontSize:'14px', fontWeight:'bold',
+                fontFamily:'-apple-system, sans-serif', letterSpacing:'0.01em'
+            });
+            b.textContent = '\\u26A0\\uFE0F  Log in with your email/password \u2014 \\"Sign in with Google\\" does not work here';
+            document.body && document.body.prepend(b);
+        }""")
+    except Exception:
+        pass
 
     is_tty = sys.stdin is not None and sys.stdin.isatty()
     if is_tty:

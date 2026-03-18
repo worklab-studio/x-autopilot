@@ -33,10 +33,20 @@ async def launch_browser(headless: bool = False):
 
     browser = await playwright.chromium.launch_persistent_context(
         user_data_dir=str(USER_DATA_DIR),
+        channel="chrome",       # Use the user's real system Chrome (not a test binary)
         headless=headless,
-        channel="chrome",  # Use real Chrome, not Chromium
-        # Prefer native browser defaults to avoid forced fingerprint mismatches.
         no_viewport=True,
+        # ── Anti-detection flags ──────────────────────────────────────────────
+        # Remove Playwright's default --enable-automation flag (causes the
+        # "Chrome is being controlled by automated test software" banner that
+        # Twitter detects and uses to block logins with "Could not log you in").
+        ignore_default_args=["--enable-automation"],
+        args=[
+            "--disable-blink-features=AutomationControlled",  # hides navigator.webdriver
+            "--no-first-run",
+            "--no-default-browser-check",
+            "--disable-infobars",  # suppresses info banners
+        ],
     )
 
     if not headless:
@@ -89,7 +99,7 @@ async def launch_browser(headless: bool = False):
     }, true);
     """
 
-    # Apply stealth patches + deep fingerprint spoofing + visible cursor to every new page
+    # Apply stealth patches + fingerprint spoofing + visible cursor to every new page
     async def _setup_page(page):
         await stealth_async(page)
         await page.add_init_script(FINGERPRINT_SCRIPT)
@@ -97,7 +107,7 @@ async def launch_browser(headless: bool = False):
 
     browser.on("page", lambda page: asyncio.ensure_future(_setup_page(page)))
 
-    # Stealth the existing pages too
+    # Apply to any pages already open at launch time
     for page in browser.pages:
         await stealth_async(page)
         await page.add_init_script(FINGERPRINT_SCRIPT)

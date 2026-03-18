@@ -462,7 +462,7 @@ tr:hover td{background:rgba(255,255,255,.015);}
         <div class="step-l"><div class="step-n">3</div><div class="step-line"></div></div>
         <div class="step-r">
           <h3>Run Setup (one time only)</h3>
-          <p>Inside the folder, find <strong>setup.command</strong> and double-click it.</p>
+          <p>Inside the folder, find <strong>2. Setup.command</strong> and double-click it.</p>
           <div class="alert al-yellow" style="margin-top:10px;">
             <div class="alert-ic">⚠</div>
             <div><strong>First time on Mac:</strong> macOS may block it. Right-click → Open → click <em>Open</em> in the popup. After this once, it runs normally on double-click.</div>
@@ -474,8 +474,8 @@ tr:hover td{background:rgba(255,255,255,.015);}
         <div class="step-l"><div class="step-n">4</div><div class="step-line"></div></div>
         <div class="step-r">
           <h3>Start the agent</h3>
-          <p>Double-click <strong>X Autopilot.app</strong>. The dashboard opens in its own window at <code style="color:var(--accent);">localhost:5001</code> — no browser tabs, no clutter. On Windows, double-click <strong>start.bat</strong> instead.</p>
-          <div class="callout" style="margin-top:10px;"><strong>First time on Mac:</strong> macOS may block it. Right-click <strong>X Autopilot.app</strong> → Open → click <em>Open</em> in the popup. You only need to do this once.</div>
+          <p>Double-click <strong>4. Run Agent.app</strong>. The dashboard opens in its own window at <code style="color:var(--accent);">localhost:5001</code> — no browser tabs, no clutter. On Windows, double-click <strong>start.bat</strong> instead.</p>
+          <div class="callout" style="margin-top:10px;"><strong>First time on Mac:</strong> macOS may block it. Right-click <strong>4. Run Agent.app</strong> → Open → click <em>Open</em> in the popup. You only need to do this once.</div>
         </div>
       </div>
       <div class="step">
@@ -632,7 +632,7 @@ tr:hover td{background:rgba(255,255,255,.015);}
       <div class="step-l"><div class="step-n">1</div><div class="step-line"></div></div>
       <div class="step-r">
         <h3>Launch the agent</h3>
-        <p>Double-click <strong>X Autopilot.app</strong> (Mac) or <strong>start.bat</strong> (Windows). The dashboard opens in its own dedicated window at <code style="color:var(--accent);">localhost:5001</code> — no address bar, no browser tabs.</p>
+        <p>Double-click <strong>4. Run Agent.app</strong> (Mac) or <strong>start.bat</strong> (Windows). The dashboard opens in its own dedicated window at <code style="color:var(--accent);">localhost:5001</code> — no address bar, no browser tabs.</p>
       </div>
     </div>
     <div class="step">
@@ -664,7 +664,7 @@ tr:hover td{background:rgba(255,255,255,.015);}
       <div class="step-l"><div class="step-n">5</div></div>
       <div class="step-r">
         <h3>To stop the agent</h3>
-        <p>On Mac: close the dashboard window or press <strong>Cmd+Q</strong> — the agent stops automatically. You can also double-click <strong>X Autopilot.app</strong> again while it's running and click <strong>Quit</strong>. On Windows: close the terminal window or use the Quit button in the dashboard.</p>
+        <p>On Mac: close the dashboard window or press <strong>Cmd+Q</strong> — the agent stops automatically. You can also double-click <strong>4. Run Agent.app</strong> again while it's running and click <strong>Quit</strong>. On Windows: close the terminal window or use the Quit button in the dashboard.</p>
       </div>
     </div>
   </div>
@@ -1243,7 +1243,7 @@ targets:
   </div>
   <div class="faq" onclick="togFaq(this)">
     <div class="faq-q">How do I stop it mid-session? <span class="faq-ch">▼</span></div>
-    <div class="faq-a"><p><strong>Mac:</strong> Close the dashboard window, press <strong>Cmd+Q</strong>, or double-click <strong>X Autopilot.app</strong> again and click Quit. All three stop the agent cleanly and close everything. <strong>Windows:</strong> Click the red <strong>✕ QUIT</strong> button in the dashboard, or close the terminal window. All data is saved either way.</p></div>
+    <div class="faq-a"><p><strong>Mac:</strong> Close the dashboard window, press <strong>Cmd+Q</strong>, or double-click <strong>4. Run Agent.app</strong> again and click Quit. All three stop the agent cleanly and close everything. <strong>Windows:</strong> Click the red <strong>✕ QUIT</strong> button in the dashboard, or close the terminal window. All data is saved either way.</p></div>
   </div>
   <div class="faq" onclick="togFaq(this)">
     <div class="faq-q">Does it post original tweets or just engage? <span class="faq-ch">▼</span></div>
@@ -1251,7 +1251,7 @@ targets:
   </div>
   <div class="faq" onclick="togFaq(this)">
     <div class="faq-q">I closed the dashboard window — what do I do? <span class="faq-ch">▼</span></div>
-    <div class="faq-a"><p>On Mac, closing the window intentionally stops the agent — just double-click <strong>X Autopilot.app</strong> to start it again. On Windows, double-click <strong>start.bat</strong>. Your Twitter session is saved in the Chrome profile so you won't need to log in again. All activity history is preserved.</p></div>
+    <div class="faq-a"><p>On Mac, closing the window intentionally stops the agent — just double-click <strong>4. Run Agent.app</strong> to start it again. On Windows, double-click <strong>start.bat</strong>. Your Twitter session is saved in the Chrome profile so you won't need to log in again. All activity history is preserved.</p></div>
   </div>
   <div class="faq" onclick="togFaq(this)">
     <div class="faq-q">Can I run this on a VPS or cloud server? <span class="faq-ch">▼</span></div>
@@ -1272,8 +1272,8 @@ targets:
     <thead><tr><th>PROBLEM</th><th>LIKELY CAUSE</th><th>FIX</th></tr></thead>
     <tbody>
       <tr><td>Dashboard won't open at localhost:5001</td><td>Server not started or port conflict</td><td>Restart the agent. If port 5001 is in use, close other apps using it. Check terminal for error output.</td></tr>
-      <tr><td>"Python not found" on Mac</td><td>Python not installed</td><td>Download from python.org, install, re-run setup.command</td></tr>
-      <tr><td>setup.command won't open on Mac</td><td>Gatekeeper blocking unsigned script</td><td>Right-click → Open → click Open. Only required once.</td></tr>
+      <tr><td>"Python not found" on Mac</td><td>Python not installed</td><td>Download from python.org, install, re-run 2. Setup.command</td></tr>
+      <tr><td>2. Setup.command won't open on Mac</td><td>Gatekeeper blocking unsigned script</td><td>Right-click → Open → click Open. Only required once.</td></tr>
       <tr><td>setup.bat blocked by Windows Defender</td><td>SmartScreen warning</td><td>Click More info → Run anyway. The script only installs Python packages.</td></tr>
       <tr><td>Browser stuck on X logo / black screen</td><td>Chrome restored previous session, React hydration failed</td><td>Normal on first run or after a profile reset. The agent detects this automatically, clears the profile, and navigates to the login page.</td></tr>
       <tr><td>Browser closes immediately on launch</td><td>Twitter session expired</td><td>Restart — the browser will open the login page. Log in and press ENTER in the terminal.</td></tr>
@@ -1284,7 +1284,7 @@ targets:
       <tr><td>Rate limit warning appears</td><td>Twitter throttling</td><td>Automatic — agent pauses 90 minutes then resumes. Reduce daily limits if recurring.</td></tr>
       <tr><td>No actions after 30 minutes</td><td>Daily limits already reached</td><td>Check Overview tab — if counts hit limits, agent rests until midnight reset. Increase limits in config.yaml.</td></tr>
       <tr><td>Chrome says "session expired, log in again"</td><td>Twitter invalidated session</td><td>Normal after ~30 days. Just log in again when prompted — session saves fresh.</td></tr>
-      <tr><td>"Module not found" error in terminal</td><td>Dependencies not installed</td><td>Run setup.command/setup.bat again. It's safe to run multiple times.</td></tr>
+      <tr><td>"Module not found" error in terminal</td><td>Dependencies not installed</td><td>Run 2. Setup.command/setup.bat again. It's safe to run multiple times.</td></tr>
     </tbody>
   </table>
 

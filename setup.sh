@@ -47,6 +47,10 @@ echo "✅  Python $PY_VER found"
 # ── 2. PYTHON VIRTUAL ENVIRONMENT ────────
 echo ""
 echo "📦  Creating Python virtual environment..."
+# Remove any existing venv — paths are machine-specific and cannot be reused
+if [ -d "venv" ]; then
+    rm -rf venv
+fi
 $PYTHON -m venv venv
 if [ $? -ne 0 ]; then
     echo "❌  Failed to create virtual environment."
@@ -74,10 +78,11 @@ if [ $? -ne 0 ]; then
 fi
 echo "✅  Python packages installed"
 
-# ── 4. PLAYWRIGHT BROWSER ────────────────
+# ── 4. AUTOMATION BROWSER ────────────────
 echo ""
 echo "🌐  Installing automation browser (1-3 minutes)..."
-playwright install chromium
+# Use the user's real system Chrome — stable on all Mac hardware including ARM64
+python -m playwright install chrome
 if [ $? -ne 0 ]; then
     echo "❌  Failed to install the automation browser."
     echo "    Check your internet connection and try again."
@@ -140,14 +145,14 @@ fi
 mkdir -p data/chrome_profile
 
 # ── 8. FIX PERMISSIONS (Mac) ──────────────
-chmod +x setup.sh start.sh setup.command start.command "twitter agent.command" "X Autopilot.app/Contents/MacOS/X Autopilot" 2>/dev/null || true
+chmod +x setup.sh start.sh "2. Setup.command" "3. Start.command" "4. Run Agent.app/Contents/MacOS/Run Agent" 2>/dev/null || true
 
 echo ""
 echo "╔══════════════════════════════════════╗"
 echo "║        SETUP COMPLETE! ✅           ║"
 echo "╚══════════════════════════════════════╝"
 echo ""
-echo "  ➜  Double-click  start.command  to launch"
+echo "  ➜  Double-click  3. Start.command  to launch"
 echo "     (or run: bash start.sh)"
 echo ""
 echo "  ➜  Dashboard opens at http://localhost:5001"

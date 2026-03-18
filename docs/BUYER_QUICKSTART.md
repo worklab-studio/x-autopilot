@@ -40,7 +40,7 @@ That's it. You do **not** need Node.js or any other software.
 
 | Your computer | What to do |
 |--------------|-----------|
-| **Mac** | Double-click **`setup.command`** in the project folder |
+| **Mac** | Double-click **`2. Setup.command`** in the project folder |
 | **Windows** | Double-click **`setup.bat`** in the project folder |
 
 A black terminal window will open and automatically install everything. It takes **2–5 minutes** (it downloads a browser for automation).
@@ -53,9 +53,28 @@ When it says **SETUP COMPLETE ✅** you're ready.
 
 macOS may block the file because it's from an unidentified developer.
 
-**Fix:** Right-click `setup.command` → click **Open** → click **Open** in the popup.
+**Fix:** Right-click `2. Setup.command` → click **Open** → click **Open** in the popup.
 
 You only need to do this once.
+
+---
+
+### ⚠️ Mac — "damaged and can't be opened"
+
+This happens when the folder was shared via WhatsApp, AirDrop, iMessage, or email. macOS adds a quarantine flag that blocks all `.command` files. Right-clicking won't help here — use the Terminal fix below.
+
+**Fix (takes 10 seconds):**
+
+1. Press `Cmd + Space`, type **Terminal**, press Enter
+2. Paste the line below and press Enter:
+
+```
+xattr -cr ~/Downloads/twitter-agent\ 4 2>/dev/null
+```
+
+If your folder has a different name or location, change the path to match — e.g. `~/Desktop/twitter-agent\ 4`.
+
+3. Double-click `2. Setup.command` again. It will open normally.
 
 ---
 
@@ -71,7 +90,7 @@ Windows may show *"Windows protected your PC"* when you double-click `setup.bat`
 
 | Your computer | What to do |
 |--------------|-----------|
-| **Mac** | Double-click **`start.command`** |
+| **Mac** | Double-click **`3. Start.command`** |
 | **Windows** | Double-click **`start.bat`** |
 
 A browser window will open automatically to **http://localhost:5001**
@@ -130,7 +149,7 @@ The dashboard at **http://localhost:5001** shows everything in real time.
 
 ## Every Day After Setup
 
-1. Double-click `start.command` (Mac) or `start.bat` (Windows)
+1. Double-click `3. Start.command` (Mac) or `start.bat` (Windows)
 2. Your browser opens to the dashboard
 3. Check the Approval Queue tab — approve or edit any queued tweets
 4. That's it — the agent runs on its own
@@ -149,7 +168,7 @@ The dashboard at **http://localhost:5001** shows everything in real time.
 | What you see | What to do |
 |-------------|-----------|
 | "Python not found" | Re-install Python from python.org and tick "Add to PATH" |
-| Dashboard is blank / won't load | Re-run `setup.command` or `setup.bat` |
+| Dashboard is blank / won't load | Re-run `2. Setup.command` or `setup.bat` |
 | "Port 5001 already in use" | The agent is already running — look for an open terminal window |
 | Twitter asks you to log in again | A browser window will appear — log in normally, session saves automatically |
 | The AI sounds nothing like me | Go to Voice Lab tab — fill in your niche, personality, and "never say" phrases |
@@ -161,8 +180,8 @@ The dashboard at **http://localhost:5001** shows everything in real time.
 
 | File / Folder | What it is |
 |--------------|-----------|
-| `setup.command` or `setup.bat` | First-time installer — run once |
-| `start.command` or `start.bat` | Daily launcher — run every time |
+| `2. Setup.command` or `setup.bat` | First-time installer — run once |
+| `3. Start.command` or `start.bat` | Daily launcher — run every time |
 | `.env` | Your API keys — keep this private, never share it |
 | `config.yaml` | All settings — edited from the dashboard, you never need to touch this file directly |
 | `data/` | Database, browser session, cookies — stays on your machine only |

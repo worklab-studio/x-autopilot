@@ -12,8 +12,16 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Fix permissions on all runnable files so future double-clicks work
-chmod +x setup.sh start.sh setup.command start.command 2>/dev/null
-chmod +x "twitter agent.command" 2>/dev/null
+chmod +x setup.sh start.sh "2. Setup.command" "3. Start.command" 2>/dev/null
+
+# Strip macOS quarantine from all scripts so 3. Start.command can be double-clicked
+# without any warning after this one-time setup run
+xattr -d com.apple.quarantine \
+  "$SCRIPT_DIR/3. Start.command" \
+  "$SCRIPT_DIR/start.sh" \
+  "$SCRIPT_DIR/2. Setup.command" \
+  "$SCRIPT_DIR/setup.sh" \
+  2>/dev/null
 
 bash setup.sh
 

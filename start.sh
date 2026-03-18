@@ -34,15 +34,58 @@ else
     source venv/Scripts/activate
 fi
 
+# ── RESOLVE VENV PYTHON ──────────────────
+# Use the venv python directly to avoid system Python (e.g. Xcode) taking priority
+if [ -f "$SCRIPT_DIR/venv/bin/python3" ]; then
+    PYTHON="$SCRIPT_DIR/venv/bin/python3"
+elif [ -f "$SCRIPT_DIR/venv/Scripts/python.exe" ]; then
+    PYTHON="$SCRIPT_DIR/venv/Scripts/python.exe"
+else
+    PYTHON="python3"
+fi
+
+# ── FIND FREE PORT (scan 5001–5100) ──────
+API_PORT=$("$PYTHON" -c "
+import socket, os
+preferred = int(os.environ.get('DASHBOARD_API_PORT', 5001))
+for p in range(preferred, preferred + 100):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 0)
+        s.bind(('127.0.0.1', p))
+        s.close()
+        print(p)
+        break
+    except OSError:
+        pass
+" 2>/dev/null)
+if [ -z "$API_PORT" ]; then
+    echo "❌  No free port found in range 5001–5100."
+    echo "    Close other running apps and try again."
+    exit 1
+fi
+mkdir -p "$SCRIPT_DIR/data"
+echo "$API_PORT" > "$SCRIPT_DIR/data/port.txt"   # read by X Autopilot.app & status_overlay
+
+# Export so main.py (and status_overlay.py) inherit the correct port
+export DASHBOARD_API_PORT="${API_PORT}"
+
 # ── START FLASK (serves API + built UI) ──
-API_PORT="${DASHBOARD_API_PORT:-5001}"
 echo "🖥  Starting dashboard on port ${API_PORT}..."
-DASHBOARD_API_PORT="${API_PORT}" python dashboard/server.py &
+"$PYTHON" dashboard/server.py &
 FLASK_PID=$!
 echo "   Dashboard PID: $FLASK_PID"
 
-# ── WAIT THEN OPEN BROWSER ───────────────
+# ── VERIFY FLASK STARTED ─────────────────
 sleep 2
+if ! kill -0 $FLASK_PID 2>/dev/null; then
+    echo ""
+    echo "❌  Dashboard server failed to start."
+    echo "    Try running setup again: double-click 2. Setup.command"
+    echo ""
+    exit 1
+fi
+
 echo ""
 echo "🌐  Opening dashboard at http://localhost:${API_PORT}"
 if command -v open &> /dev/null; then
@@ -65,6 +108,7 @@ if command -v open &> /dev/null; then
     done
     # Fallback to default browser if no Chrome-based browser found
     if [ "$BROWSER_OPENED" = false ]; then
+        echo "   (No Chrome/Brave/Edge found — opening in your default browser)"
         open "http://localhost:${API_PORT}"
     fi
 
@@ -81,7 +125,9 @@ echo "╚═══════════════════════�
 echo ""
 
 # ── START AGENT (foreground) ─────────────
-python main.py
+# tee to agent.log so the dashboard log panel can read it
+mkdir -p "$SCRIPT_DIR/data"
+"$PYTHON" main.py 2>&1 | tee "$SCRIPT_DIR/data/agent.log"
 
 # ── CLEANUP ON EXIT ───────────────────────
 echo ""

@@ -25,12 +25,20 @@ That guide walks you through the full setup in plain language with no assumed kn
 
 | Mac | Windows |
 |-----|---------|
-| Double-click **`setup.command`** | Double-click **`setup.bat`** |
+| Double-click **`2. Setup.command`** | Double-click **`setup.bat`** |
 
 Takes 2–5 minutes. Installs Python packages + downloads the automation browser.
 
-> **Mac:** If you see *"cannot be opened because it is from an unidentified developer"*
-> → Right-click the file → **Open** → **Open**
+> **Mac warning on first run:** Right-click `2. Setup.command` → **Open** → **Open**
+> After setup runs once, `3. Start.command` will double-click normally with no warnings.
+
+> **Mac — "damaged and can't be opened"** (only happens if you received the folder via WhatsApp, AirDrop, or email instead of downloading from Gumroad directly)
+> 1. Open **Terminal** (press `Cmd+Space`, type `Terminal`, hit Enter)
+> 2. Paste this and press Enter:
+>    ```
+>    xattr -cr ~/Downloads/twitter-agent\ 4 2>/dev/null
+>    ```
+> 3. Then right-click `2. Setup.command` → **Open** → **Open**
 
 > **Windows:** If SmartScreen warns you → click **More info** → **Run anyway**
 
@@ -38,7 +46,7 @@ Takes 2–5 minutes. Installs Python packages + downloads the automation browser
 
 | Mac | Windows |
 |-----|---------|
-| Double-click **`start.command`** | Double-click **`start.bat`** |
+| Double-click **`3. Start.command`** | Double-click **`start.bat`** |
 
 Your browser opens automatically to **http://localhost:5001**
 
@@ -80,10 +88,11 @@ That's it. The agent starts running.
 | Problem | Fix |
 |---------|-----|
 | "Python not found" | Re-install Python and tick "Add to PATH" |
-| Dashboard is blank | Re-run `setup.command` / `setup.bat` |
+| Dashboard is blank | Re-run `2. Setup.command` / `setup.bat` |
 | Port 5001 in use | The agent is already running — check your taskbar |
 | Browser stuck on X logo | Normal on first launch — agent clears it automatically and navigates to login |
 | Twitter login needed again | A browser window will open to the login page — log in normally |
+| Mac: "damaged and can't be opened" | Open Terminal and run: `xattr -cr ~/Downloads/twitter-agent\ 4 2>/dev/null` then try again |
 
 ---
 
@@ -91,8 +100,8 @@ That's it. The agent starts running.
 
 | File | Purpose |
 |------|---------|
-| `setup.command` / `setup.bat` | First-time setup (run once) |
-| `start.command` / `start.bat` | Launch the agent (run every time) |
+| `2. Setup.command` / `setup.bat` | First-time setup (run once) |
+| `3. Start.command` / `start.bat` | Launch the agent (run every time) |
 | `.env` | Your API keys (auto-created, never share this file) |
 | `config.yaml` | All agent settings (editable from the dashboard) |
 | `data/` | Database, session, cookies — stays on your machine |

@@ -9,3 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 bash start.sh
+
+echo ""
+echo "Press Enter to close this window..."
+read

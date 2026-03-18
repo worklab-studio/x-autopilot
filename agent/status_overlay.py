@@ -3,6 +3,7 @@ status_overlay.py — Floating status bar overlay for the live browser.
 Includes Quit and Skip Break buttons for live control of the agent.
 """
 
+import os
 import yaml
 from pathlib import Path
 
@@ -66,7 +67,7 @@ def skip_break_requested() -> bool:
 # ── Overlay JS ───────────────────────────────────────────
 _OVERLAY_JS = r"""
 (statusText) => {
-  const API_BASE = "http://localhost:5001";
+  const API_BASE = "http://localhost:__PORT__";
   const id = "agent-status-overlay";
   let el = document.getElementById(id);
 
@@ -192,7 +193,7 @@ _OVERLAY_JS = r"""
     }
   }
 }
-"""
+""".replace("__PORT__", os.environ.get("DASHBOARD_API_PORT", "5001"))
 
 
 async def set_status(text: str):

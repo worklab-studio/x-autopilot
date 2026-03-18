@@ -51,6 +51,7 @@ MEDIA_DIR.mkdir(parents=True, exist_ok=True)
 CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 ENV_PATH = Path(__file__).parent.parent / ".env"
 BUILD_DIR = Path(__file__).parent / "build"
+LOG_PATH = Path(__file__).parent.parent / "data" / "agent.log"
 
 ALLOWED_MEDIA_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".mp4", ".mov"}
 CONFIG_ALLOWLIST = {
@@ -793,6 +794,15 @@ def health():
     return jsonify({"status": "ok"})
 
 
+@app.route("/api/logs")
+def get_logs():
+    if not LOG_PATH.exists():
+        return jsonify({"lines": []})
+    with open(LOG_PATH, "r", errors="replace") as f:
+        lines = f.readlines()
+    return jsonify({"lines": [l.rstrip("\n") for l in lines[-200:]]})
+
+
 @app.route("/api/credentials")
 def get_credentials():
     vals = dotenv_values(ENV_PATH) if ENV_PATH.exists() else {}
@@ -937,6 +947,82 @@ def get_thread_hooks():
 
 
 # ─── SERVE REACT BUILD ────────────────────────────────
+# ── AGENT LOG PANEL ──────────────────────────────────────────────────────────
+# Injected into index.html at runtime — no React rebuild needed.
+LOG_PANEL_SCRIPT = """
+<style>
+#agent-log-panel {
+  position: fixed; bottom: 20px; right: 20px; z-index: 99999;
+  width: 420px; font-family: 'Menlo', 'Consolas', monospace; font-size: 12px;
+}
+#agent-log-toggle {
+  background: #1a1a2e; color: #00ff88; border: 1px solid #00ff88;
+  padding: 6px 14px; border-radius: 6px 6px 0 0; cursor: pointer;
+  font-size: 12px; font-family: inherit; width: 100%;
+  text-align: left; display: flex; justify-content: space-between;
+}
+#agent-log-toggle:hover { background: #16213e; }
+#agent-log-body {
+  background: #0d0d1a; border: 1px solid #00ff88; border-top: none;
+  height: 240px; overflow-y: auto; padding: 8px;
+  border-radius: 0 0 6px 6px; display: none;
+}
+#agent-log-body.open { display: block; }
+.log-line { color: #ccffdd; line-height: 1.5; white-space: pre-wrap; word-break: break-all; }
+.log-line.err { color: #ff6b6b; }
+</style>
+<div id="agent-log-panel">
+  <button id="agent-log-toggle" onclick="agentLogToggle()">
+    <span>&#9654; Agent Logs</span><span id="agent-log-badge" style="color:#888">loading…</span>
+  </button>
+  <div id="agent-log-body"></div>
+</div>
+<script>
+(function() {
+  var open = false;
+  var lastCount = 0;
+  var newLines = 0;
+  window.agentLogToggle = function() {
+    open = !open;
+    document.getElementById('agent-log-body').className = open ? 'open' : '';
+    var arrow = document.querySelector('#agent-log-toggle span:first-child');
+    arrow.textContent = (open ? '▼' : '▶') + ' Agent Logs';
+    newLines = 0;
+    updateBadge();
+  };
+  function updateBadge() {
+    var badge = document.getElementById('agent-log-badge');
+    if (!open && newLines > 0) {
+      badge.style.color = '#00ff88';
+      badge.textContent = '+' + newLines + ' new';
+    } else {
+      badge.style.color = '#888';
+      badge.textContent = lastCount + ' lines';
+    }
+  }
+  function fetchLogs() {
+    fetch('/api/logs').then(function(r){ return r.json(); }).then(function(data) {
+      var lines = data.lines || [];
+      var body = document.getElementById('agent-log-body');
+      var atBottom = body.scrollHeight - body.scrollTop <= body.clientHeight + 10;
+      if (lines.length !== lastCount) {
+        newLines += Math.abs(lines.length - lastCount);
+        lastCount = lines.length;
+        body.innerHTML = lines.map(function(l) {
+          var cls = (l.indexOf('Error') !== -1 || l.indexOf('❌') !== -1 || l.indexOf('Traceback') !== -1) ? 'err' : '';
+          return '<div class="log-line ' + cls + '">' + l.replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</div>';
+        }).join('');
+        if (open && atBottom) body.scrollTop = body.scrollHeight;
+      }
+      updateBadge();
+    }).catch(function(){});
+  }
+  fetchLogs();
+  setInterval(fetchLogs, 3000);
+})();
+</script>
+"""
+
 # Serves the pre-built React UI from dashboard/build/
 # This means buyers only need Python to run — no Node.js at runtime.
 
@@ -950,10 +1036,12 @@ def serve_react(path):
     static_file = BUILD_DIR / path
     if path and static_file.exists():
         return send_from_directory(BUILD_DIR, path)
-    # Everything else → index.html (React handles routing)
+    # Everything else → index.html (React handles routing) + inject log panel
     index = BUILD_DIR / "index.html"
     if index.exists():
-        return send_from_directory(BUILD_DIR, "index.html")
+        html = index.read_text(encoding="utf-8")
+        html = html.replace("</body>", LOG_PANEL_SCRIPT + "</body>")
+        return html, 200, {"Content-Type": "text/html; charset=utf-8"}
     return (
         "<h2>Dashboard UI not built yet.</h2>"
         "<p>Run <code>npm --prefix dashboard run build</code> to build it.</p>",

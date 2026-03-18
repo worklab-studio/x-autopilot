@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>X-Autopilot — Start Here</title>
+<link rel="icon" type="image/png" href="logo.png"/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap"
+      rel="stylesheet" media="print" onload="this.media='all'">
+<noscript>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+</noscript>
+<style>
+:root {
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --border: #1e1e1e;
+  --border2: #2a2a2a;
+  --accent: #00ff88;
+  --accent-dim: rgba(0,255,136,0.08);
+  --accent-mid: rgba(0,255,136,0.25);
+  --text: #e8e8e8;
+  --text-mid: #888888;
+  --text-dim: #444444;
+  --red: #ff4444;
+  --yellow: #ffcc00;
+  --blue: #4488ff;
+  --mono: 'JetBrains Mono', 'Courier New', monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--mono);
+  font-size:13px;
+  line-height:1.7;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+body::before{
+  content:'';
+  position:fixed;
+  top:-200px;
+  left:50%;
+  transform:translateX(-50%);
+  width:800px;
+  height:600px;
+  background:radial-gradient(ellipse,rgba(0,255,136,.04) 0%,transparent 65%);
+  pointer-events:none;
+  z-index:0;
+}
+
+/* HEADER */
+header{
+  height:56px;
+  background:rgba(10,10,10,0.97);
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  padding:0 40px;
+  gap:16px;
+  position:sticky;
+  top:0;
+  z-index:100;
+  flex-shrink:0;
+}
+.logo-name{font-size:14px;font-weight:800;letter-spacing:4px;color:var(--accent);}
+.hero-chip{
+  display:inline-flex;align-items:center;gap:6px;
+  border:1px solid var(--border2);padding:4px 12px;
+  font-size:9px;letter-spacing:2px;color:var(--text-dim);
+}
+.hero-chip span{
+  width:6px;height:6px;border-radius:50%;background:var(--accent);
+  display:inline-block;animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* MAIN CONTENT */
+.content{
+  flex:1;
+  max-width:780px;
+  margin:0 auto;
+  padding:48px 24px 80px;
+  position:relative;
+  z-index:1;
+  width:100%;
+}
+
+/* PLATFORM TOGGLE */
+.platform-toggle{
+  display:flex;
+  gap:8px;
+  margin-bottom:40px;
+  justify-content:center;
+}
+.platform-btn{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:1px;
+  padding:8px 24px;
+  border:1px solid var(--border2);
+  background:transparent;
+  color:var(--text-mid);
+  cursor:pointer;
+  transition:all .12s;
+}
+.platform-btn:hover{border-color:var(--accent);color:var(--accent);}
+.platform-btn.active{
+  background:var(--accent);
+  color:var(--bg);
+  border-color:var(--accent);
+  font-weight:700;
+}
+
+/* PAGE TITLE */
+.page-title{
+  text-align:center;
+  margin-bottom:40px;
+}
+.page-title h1{
+  font-size:28px;
+  font-weight:800;
+  letter-spacing:-0.5px;
+  margin-bottom:8px;
+}
+.page-title h1 em{color:var(--accent);font-style:normal;}
+.page-title p{font-size:12px;color:var(--text-mid);}
+
+/* STEPS */
+.steps{display:flex;flex-direction:column;gap:0;}
+.step{display:flex;gap:20px;padding-bottom:32px;}
+.step:last-child{padding-bottom:0;}
+.step-l{display:flex;flex-direction:column;align-items:center;flex-shrink:0;}
+.step-n{
+  width:30px;height:30px;
+  border:1px solid var(--accent);
+  color:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;flex-shrink:0;
+}
+.step-line{
+  width:1px;flex:1;
+  background:linear-gradient(to bottom,var(--accent),transparent);
+  margin-top:6px;min-height:20px;
+}
+.step:last-child .step-line{display:none;}
+.step-r{flex:1;padding-top:4px;}
+.step-r h3{font-size:14px;font-weight:700;margin-bottom:6px;letter-spacing:.3px;}
+.step-r p{font-size:12px;color:var(--text-mid);line-height:1.7;}
+.step-r .sub{font-size:11px;color:var(--text-dim);margin-top:4px;}
+
+/* CODE BLOCKS */
+.code{
+  background:#0d0d0d;
+  border:1px solid var(--border);
+  padding:14px 18px;
+  font-size:12px;
+  line-height:1.9;
+  overflow-x:auto;
+  position:relative;
+  margin-top:12px;
+}
+.code .cm{color:var(--text-dim);}
+.code .vl{color:var(--accent);}
+.copy{
+  position:absolute;top:10px;right:10px;
+  background:transparent;
+  border:1px solid var(--border2);
+  color:var(--text-dim);
+  font-family:var(--mono);
+  font-size:9px;letter-spacing:1px;
+  padding:3px 8px;cursor:pointer;
+  transition:all .12s;
+}
+.copy:hover{border-color:var(--accent);color:var(--accent);}
+.copy.copied{border-color:var(--accent);color:var(--accent);}
+
+/* ALERTS */
+.alert{
+  display:flex;gap:12px;padding:12px 14px;
+  font-size:11px;line-height:1.7;
+  margin:12px 0;border-left:2px solid;
+}
+.al-green{border-color:var(--accent);background:rgba(0,255,136,.04);color:var(--text-mid);}
+.al-yellow{border-color:var(--yellow);background:rgba(255,204,0,.04);color:var(--text-mid);}
+.alert-ic{flex-shrink:0;margin-top:1px;}
+
+/* KBD CHIPS */
+.kbd{
+  display:inline-block;
+  border:1px solid var(--border2);
+  padding:1px 7px;
+  font-size:10px;
+  color:var(--text);
+  border-radius:3px;
+  background:var(--surface);
+  margin:0 1px;
+}
+
+/* MINI STEPS (inside a step) */
+.mini-steps{margin-top:12px;display:flex;flex-direction:column;gap:8px;}
+.mini-step{display:flex;gap:10px;align-items:flex-start;font-size:11px;color:var(--text-mid);}
+.mini-step-n{
+  width:20px;height:20px;border:1px solid var(--border2);
+  color:var(--text-dim);display:flex;align-items:center;
+  justify-content:center;font-size:10px;flex-shrink:0;margin-top:1px;
+}
+
+/* CONTEXT MENU MOCKUP */
+.mockup-wrap{margin-top:14px;}
+.mockup-label{font-size:10px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px;}
+.ctx-menu{
+  display:inline-flex;flex-direction:column;
+  border:1px solid var(--border2);
+  background:#161616;
+  min-width:180px;
+  overflow:hidden;
+}
+.ctx-item{
+  padding:8px 16px;font-size:11px;
+  color:var(--text-mid);
+  border-bottom:1px solid var(--border);
+}
+.ctx-item:last-child{border-bottom:none;}
+.ctx-item.ctx-active{
+  background:var(--accent-dim);
+  color:var(--accent);
+  font-weight:700;
+}
+.ctx-item.ctx-active::before{content:"→ ";}
+
+/* SMARTSCREEN MOCKUP */
+.smartscreen{
+  border:1px solid var(--border2);
+  background:#161616;
+  max-width:400px;
+  margin-top:14px;
+  overflow:hidden;
+}
+.ss-header{
+  background:#0050a0;
+  padding:10px 16px;
+  font-size:11px;
+  color:#fff;
+  font-weight:700;
+  letter-spacing:.5px;
+}
+.ss-body{padding:16px;}
+.ss-body p{font-size:11px;color:var(--text-mid);margin-bottom:12px;}
+.ss-btns{display:flex;gap:8px;flex-wrap:wrap;}
+.ss-btn{
+  font-family:var(--mono);font-size:10px;
+  padding:6px 14px;border:1px solid var(--border2);
+  background:transparent;color:var(--text-mid);cursor:default;
+}
+.ss-btn.ss-more{color:var(--accent);border-color:rgba(0,255,136,.3);}
+.ss-btn.ss-run{
+  color:var(--bg);background:var(--accent);
+  border-color:var(--accent);font-weight:700;
+}
+.ss-arrow{font-size:10px;color:var(--text-dim);margin:0 2px;}
+
+/* FOOTER */
+footer{
+  height:56px;
+  border-top:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 40px;
+  flex-shrink:0;
+  position:relative;
+  z-index:1;
+}
+footer a{color:var(--accent);text-decoration:none;font-size:11px;}
+footer a:hover{text-decoration:underline;}
+.foot-right{font-size:9px;color:var(--text-dim);letter-spacing:2px;}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  header{padding:0 20px;}
+  .content{padding:32px 16px 60px;}
+  .page-title h1{font-size:20px;}
+  .ctx-menu,.smartscreen{display:none;}
+  footer{padding:0 20px;}
+  .foot-right{display:none;}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <img src="logo.png" height="28" alt="X-Autopilot" style="flex-shrink:0;">
+  <span class="logo-name">X-AUTOPILOT</span>
+  <div class="hero-chip"><span></span>SETUP GUIDE</div>
+</header>
+
+<!-- MAIN -->
+<div class="content">
+
+  <div class="page-title">
+    <h1>Let's get you <em>running.</em></h1>
+    <p>Follow the steps below for your platform — takes about 5 minutes.</p>
+  </div>
+
+  <!-- PLATFORM TOGGLE -->
+  <div class="platform-toggle">
+    <button class="platform-btn" id="btn-mac" onclick="showPlatform('mac')">🍎 &nbsp;I'm on a Mac</button>
+    <button class="platform-btn" id="btn-win" onclick="showPlatform('win')">🪟 &nbsp;I'm on Windows</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--  MAC STEPS                                 -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="mac-steps">
+    <div class="steps">
+
+      <!-- STEP 1 -->
+      <div class="step">
+        <div class="step-l">
+          <div class="step-n">1</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-r">
+          <h3>Unlock the files <span style="color:var(--text-dim);font-weight:400;font-size:11px;">(one-time fix)</span></h3>
+          <p>macOS blocked these files because they were downloaded from the internet. This is <strong style="color:var(--text)">normal</strong> and not a security problem — it happens to every Mac app that isn't from the App Store. Run this one command to fix it:</p>
+
+          <div class="code">
+            <span class="cm">$ </span><span class="vl" id="xattr-cmd">xattr -cr "/path/to/twitter-agent 4"</span>
+            <button class="copy" id="copy-xattr-btn" onclick="doCopy('copy-xattr-btn')">COPY</button>
+          </div>
+
+          <div class="mini-steps">
+            <div class="mini-step">
+              <div class="mini-step-n">1</div>
+              <div>Press <kbd class="kbd">⌘</kbd> <kbd class="kbd">Space</kbd> — type <strong style="color:var(--text)">Terminal</strong> — press <kbd class="kbd">Enter</kbd></div>
+            </div>
+            <div class="mini-step">
+              <div class="mini-step-n">2</div>
+              <div>Paste the command above (<kbd class="kbd">⌘ V</kbd>) and press <kbd class="kbd">Enter</kbd></div>
+            </div>
+            <div class="mini-step">
+              <div class="mini-step-n">3</div>
+              <div>The command runs silently — no output means it worked. Close Terminal.</div>
+            </div>
+          </div>
+
+          <div class="alert al-yellow" style="margin-top:14px;">
+            <span class="alert-ic">⚡</span>
+            <span>You only need to do this <strong>once</strong>. After this, everything double-clicks normally.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step">
+        <div class="step-l">
+          <div class="step-n">2</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-r">
+          <h3>Run setup <span style="color:var(--text-dim);font-weight:400;font-size:11px;">(one-time only)</span></h3>
+          <p><strong style="color:var(--text)">Right-click</strong> <code style="color:var(--accent);background:var(--accent-dim);padding:1px 6px;">2. Setup.command</code> in the folder → click <strong style="color:var(--text)">Open</strong> → click <strong style="color:var(--text)">Open</strong> again in the popup.</p>
+
+          <div class="mockup-wrap">
+            <div class="mockup-label">RIGHT-CLICK MENU</div>
+            <div class="ctx-menu">
+              <div class="ctx-item ctx-active">Open</div>
+              <div class="ctx-item">Open With…</div>
+              <div class="ctx-item">Get Info</div>
+              <div class="ctx-item">Move to Trash</div>
+            </div>
+          </div>
+
+          <p class="sub" style="margin-top:12px;">A terminal window opens and installs everything. Takes 2–5 minutes. You'll see progress messages.</p>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step">
+        <div class="step-l">
+          <div class="step-n">3</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-r">
+          <h3>Launch the agent</h3>
+          <p><strong style="color:var(--text)">Double-click</strong> <code style="color:var(--accent);background:var(--accent-dim);padding:1px 6px;">4. Run Agent.app</code> any time you want to run it.</p>
+          <p class="sub" style="margin-top:8px;">Your browser opens automatically to the dashboard:</p>
+          <div class="code" style="margin-top:8px;">
+            <span class="vl">http://localhost:5001</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 -->
+      <div class="step">
+        <div class="step-l">
+          <div class="step-n">4</div>
+        </div>
+        <div class="step-r">
+          <h3>Add your API key</h3>
+          <p>In the dashboard: go to the <strong style="color:var(--text)">Settings</strong> tab → fill in your Anthropic API key and Twitter username → click <strong style="color:var(--text)">Save</strong>.</p>
+          <div class="alert al-green" style="margin-top:12px;">
+            <span class="alert-ic">✓</span>
+            <span>Get a free Anthropic key at <strong style="color:var(--accent)">console.anthropic.com</strong> — new accounts get free credits. OpenAI works too.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /mac-steps -->
+
+  <!-- ══════════════════════════════════════════ -->
+  <!--  WINDOWS STEPS                             -->
+  <!-- ══════════════════════════════════════════ -->
+  <div id="win-steps" style="display:none;">
+    <div class="steps">
+
+      <!-- STEP 1 -->
+      <div class="step">
+        <div class="step-l">
+          <div class="step-n">1</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-r">
+          <h3>Run setup <span style="color:var(--text-dim);font-weight:400;font-size:11px;">(one-time only)</span></h3>
+          <p><strong style="color:var(--text)">Double-click</strong> <code style="color:var(--accent);background:var(--accent-dim);padding:1px 6px;">setup.bat</code> in the folder.</p>
+          <p class="sub" style="margin-top:8px;">Windows may show a blue SmartScreen warning. Click through it:</p>
+
+          <div class="smartscreen">
+            <div class="ss-header">Windows protected your PC</div>
+            <div class="ss-body">
+              <p>Windows Defender SmartScreen prevented an unrecognized app from starting.</p>
+              <div class="ss-btns">
+                <span class="ss-btn ss-more">More info</span>
+                <span class="ss-arrow">→</span>
+                <span class="ss-btn ss-run">Run anyway</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="sub" style="margin-top:12px;">Takes 2–5 minutes. A terminal window shows progress.</p>
+        </div>
+      </div>
+
+      <!-- STEP 2 -->
+      <div class="step">
+        <div class="step-l">
+          <div class="step-n">2</div>
+          <div class="step-line"></div>
+        </div>
+        <div class="step-r">
+          <h3>Launch the agent</h3>
+          <p><strong style="color:var(--text)">Double-click</strong> <code style="color:var(--accent);background:var(--accent-dim);padding:1px 6px;">start.bat</code> any time you want to run it.</p>
+          <p class="sub" style="margin-top:8px;">Your browser opens automatically to the dashboard:</p>
+          <div class="code" style="margin-top:8px;">
+            <span class="vl">http://localhost:5001</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 -->
+      <div class="step">
+        <div class="step-l">
+          <div class="step-n">3</div>
+        </div>
+        <div class="step-r">
+          <h3>Add your API key</h3>
+          <p>In the dashboard: go to the <strong style="color:var(--text)">Settings</strong> tab → fill in your Anthropic API key and Twitter username → click <strong style="color:var(--text)">Save</strong>.</p>
+          <div class="alert al-green" style="margin-top:12px;">
+            <span class="alert-ic">✓</span>
+            <span>Get a free Anthropic key at <strong style="color:var(--accent)">console.anthropic.com</strong> — new accounts get free credits. OpenAI works too.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /win-steps -->
+
+</div><!-- /content -->
+
+<!-- FOOTER -->
+<footer>
+  <span style="font-size:11px;color:var(--text-mid);">
+    Need more help? &nbsp;<a href="docs/guide.html">Full Setup Guide →</a>
+  </span>
+  <span class="foot-right">X-AUTOPILOT · SETUP</span>
+</footer>
+
+<script>
+// ── Platform detection & toggle ───────────────────────────────────────────
+function showPlatform(p) {
+  document.getElementById('mac-steps').style.display = p === 'mac' ? 'block' : 'none';
+  document.getElementById('win-steps').style.display = p === 'win' ? 'block' : 'none';
+  document.getElementById('btn-mac').classList.toggle('active', p === 'mac');
+  document.getElementById('btn-win').classList.toggle('active', p === 'win');
+}
+
+// ── Build xattr command from current file path ────────────────────────────
+function buildXattrCommand() {
+  try {
+    var raw = window.location.href;
+    if (!raw.startsWith('file://')) return null;
+    var decoded = decodeURIComponent(raw);
+    // Remove file:// prefix and filename — handle both /file and //host/file forms
+    var path = decoded.replace(/^file:\/\/\//, '/').replace(/^file:\/\//, '/');
+    // Strip the filename (START HERE.html or any .html at end)
+    path = path.replace(/\/[^\/]+\.html.*$/i, '');
+    if (!path || path === '/') return null;
+    return 'xattr -cr "' + path + '"';
+  } catch(e) {
+    return null;
+  }
+}
+
+// ── Copy to clipboard (works on file:// URLs) ─────────────────────────────
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text).catch(function() { fallbackCopy(text); });
+  }
+  fallbackCopy(text);
+}
+function fallbackCopy(text) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+function doCopy(btnId) {
+  var btn = document.getElementById(btnId);
+  var text = btn.dataset.copy;
+  if (!text) return;
+  copyText(text);
+  btn.textContent = '✓ COPIED';
+  btn.classList.add('copied');
+  setTimeout(function() {
+    btn.textContent = 'COPY';
+    btn.classList.remove('copied');
+  }, 2000);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+  // Auto-detect platform
+  var isMac = /mac/i.test((navigator.platform || '') + ' ' + (navigator.userAgent || ''));
+  showPlatform(isMac ? 'mac' : 'win');
+
+  // Inject xattr command
+  var cmd = buildXattrCommand();
+  if (!cmd) cmd = 'xattr -cr "$(pwd)" 2>/dev/null';
+  else cmd = cmd + ' 2>/dev/null';
+  document.getElementById('xattr-cmd').textContent = cmd;
+  document.getElementById('copy-xattr-btn').dataset.copy = cmd;
+});
+</script>
+</body>
+</html>
