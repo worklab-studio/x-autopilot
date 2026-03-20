@@ -99,13 +99,21 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "✅  Google Chrome found"
 fi
 
-# ── 5. PLAYWRIGHT BROWSER DEPS ───────────
-# channel="chrome" uses the user's real system Chrome — no separate download needed.
-# We only install Playwright's OS-level dependencies (codecs, fonts, etc.)
+# ── 5. BROWSER CLEANUP ────────────────────
+# Remove any previously downloaded test browsers (patchright / playwright install).
+# channel="chrome" uses the user's real system Chrome — no downloaded binary needed.
+# Stale test browsers cause --no-sandbox banners and login failures.
 echo ""
-echo "🌐  Installing browser dependencies..."
-python -m playwright install-deps chromium --quiet 2>/dev/null || true
-echo "✅  Browser dependencies ready"
+echo "🧹  Cleaning up old browser downloads..."
+rm -rf "$HOME/Library/Caches/ms-playwright" 2>/dev/null
+rm -rf "$HOME/.cache/ms-playwright" 2>/dev/null
+# Clear tainted browser profile from previous runs
+if [ -d "data/chrome_profile" ]; then
+    rm -rf data/chrome_profile
+    mkdir -p data/chrome_profile
+    echo "   Cleared old browser session (you'll need to log in again)"
+fi
+echo "✅  Browser ready (using your system Chrome)"
 
 # ── 6. DASHBOARD BUILD ────────────────────
 # If the pre-built dashboard is already included (shipped with the product),
