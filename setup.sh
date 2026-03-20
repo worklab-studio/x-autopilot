@@ -99,12 +99,10 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "✅  Google Chrome found"
 fi
 
-# ── 5. BROWSER CLEANUP ────────────────────
-# Remove any previously downloaded test browsers (patchright / playwright install).
-# channel="chrome" uses the user's real system Chrome — no downloaded binary needed.
-# Stale test browsers cause --no-sandbox banners and login failures.
+# ── 5. BROWSER SETUP ─────────────────────
+# Clean old patchright/stale browser downloads that cause --no-sandbox errors
 echo ""
-echo "🧹  Cleaning up old browser downloads..."
+echo "🧹  Cleaning up old browser data..."
 rm -rf "$HOME/Library/Caches/ms-playwright" 2>/dev/null
 rm -rf "$HOME/.cache/ms-playwright" 2>/dev/null
 # Clear tainted browser profile from previous runs
@@ -112,6 +110,18 @@ if [ -d "data/chrome_profile" ]; then
     rm -rf data/chrome_profile
     mkdir -p data/chrome_profile
     echo "   Cleared old browser session (you'll need to log in again)"
+fi
+
+# Install Playwright's Chromium driver files (required for CDP protocol).
+# channel="chrome" in the code uses your SYSTEM Chrome to browse,
+# but Playwright still needs its own driver/protocol files to talk to it.
+echo "🌐  Installing browser driver (1-2 minutes)..."
+python -m playwright install chromium
+if [ $? -ne 0 ]; then
+    echo "❌  Failed to install browser driver."
+    echo "    Check your internet connection and try again."
+    read -p "Press Enter to close..."
+    exit 1
 fi
 echo "✅  Browser ready (using your system Chrome)"
 
