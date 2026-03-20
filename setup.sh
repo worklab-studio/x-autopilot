@@ -69,6 +69,8 @@ fi
 echo ""
 echo "📦  Installing Python packages (1-2 minutes)..."
 pip install --upgrade pip --quiet
+# Install greenlet from pre-built wheel first — avoids C++ compile failure on some Macs
+pip install --only-binary=:all: greenlet --quiet 2>/dev/null || pip install greenlet --quiet
 pip install -r requirements.txt --quiet
 if [ $? -ne 0 ]; then
     echo "❌  Failed to install Python packages."
