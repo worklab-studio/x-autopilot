@@ -80,7 +80,26 @@ if [ $? -ne 0 ]; then
 fi
 echo "✅  Python packages installed"
 
-# ── 4. AUTOMATION BROWSER ────────────────
+# ── 4. CHECK GOOGLE CHROME ───────────────
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    if [ ! -f "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]; then
+        echo ""
+        echo "⚠️  Google Chrome not found."
+        echo ""
+        echo "    The agent uses your real Chrome browser to control Twitter."
+        echo "    Please install Google Chrome first:"
+        echo ""
+        echo "    → https://www.google.com/chrome"
+        echo ""
+        echo "    After installing Chrome, run this setup again."
+        echo ""
+        read -p "Press Enter to close..."
+        exit 1
+    fi
+    echo "✅  Google Chrome found"
+fi
+
+# ── 5. AUTOMATION BROWSER ────────────────
 echo ""
 echo "🌐  Installing automation browser (1-3 minutes)..."
 # Use the user's real system Chrome — stable on all Mac hardware including ARM64
