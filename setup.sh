@@ -99,20 +99,15 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "✅  Google Chrome found"
 fi
 
-# ── 5. AUTOMATION BROWSER ────────────────
+# ── 5. PLAYWRIGHT BROWSER DEPS ───────────
+# channel="chrome" uses the user's real system Chrome — no separate download needed.
+# We only install Playwright's OS-level dependencies (codecs, fonts, etc.)
 echo ""
-echo "🌐  Installing automation browser (1-3 minutes)..."
-# Use the user's real system Chrome — stable on all Mac hardware including ARM64
-python -m playwright install chrome
-if [ $? -ne 0 ]; then
-    echo "❌  Failed to install the automation browser."
-    echo "    Check your internet connection and try again."
-    read -p "Press Enter to close..."
-    exit 1
-fi
-echo "✅  Browser installed"
+echo "🌐  Installing browser dependencies..."
+python -m playwright install-deps chromium --quiet 2>/dev/null || true
+echo "✅  Browser dependencies ready"
 
-# ── 5. DASHBOARD BUILD ────────────────────
+# ── 6. DASHBOARD BUILD ────────────────────
 # If the pre-built dashboard is already included (shipped with the product),
 # skip Node.js entirely. Node.js is only needed to rebuild from source.
 if [ -f "dashboard/build/index.html" ]; then
@@ -155,17 +150,17 @@ else
     echo "✅  Dashboard built"
 fi
 
-# ── 6. CREATE .env IF MISSING ─────────────
+# ── 7. CREATE .env IF MISSING ─────────────
 if [ ! -f ".env" ]; then
     cp .env.example .env
     echo ""
     echo "📄  Created .env config file"
 fi
 
-# ── 7. DATA DIRECTORY ─────────────────────
+# ── 8. DATA DIRECTORY ─────────────────────
 mkdir -p data/chrome_profile
 
-# ── 8. FIX PERMISSIONS (Mac) ──────────────
+# ── 9. FIX PERMISSIONS (Mac) ──────────────
 chmod +x setup.sh start.sh "2. Setup.command" "3. Start.command" "4. Run Agent.app/Contents/MacOS/Run Agent" 2>/dev/null || true
 
 echo ""
